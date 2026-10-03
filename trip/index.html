@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f5248">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="旅のしおり">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<script>
+/* ===== ここだけ書き換える：GASのウェブアプリのURL（/exec で終わるもの） ===== */
+window.TRIP_API_URL = 'https://script.google.com/macros/s/AKfycbzcMRgfH5GDtsIQTGgLTxJlRzguL2FMbC3jHR2TqfBqZqmnrMzB_5n4zaM3DAKGTvfZtA/exec';
+</script>
+
+<title>鹿児島・熊本 3日間</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#eceee8; --paper:#ffffff; --ink:#141814; --muted:#4f5648; --line:#c9cfc0; color-scheme:light;
+  --sea:#0f5248; --lava:#b06f00; --lava-soft:rgba(196,128,15,.16);
+  --now-bg:#fdf0d8; --next-bg:#e2efe9; --sea-soft:rgba(15,82,72,.12); --dim:.42;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Zen Kaku Gothic New","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;
+  font-size:15.5px;font-weight:500;line-height:1.6;-webkit-font-smoothing:antialiased}
+.num{font-family:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--sea);outline-offset:2px}
+svg.i{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+.wrap{max-width:560px;margin:0 auto;padding:0 18px calc(88px + env(safe-area-inset-bottom,0px))}
+
+/* header */
+header{padding:22px 0 6px}
+header h1{font-size:22px;font-weight:900;margin:0;letter-spacing:.02em}
+header .meta{color:var(--muted);font-size:13px;margin-top:2px}
+
+/* hero */
+.hero{margin:14px 0 8px;padding:18px 18px 18px;background:var(--paper);border-left:4px solid var(--lava);border-radius:2px 12px 12px 2px}
+.hero .state{font-size:14px;color:var(--lava);font-weight:900;letter-spacing:.04em}
+.hero .big{display:flex;align-items:baseline;gap:8px;margin:2px 0 6px}
+.hero .big .num{font-size:56px;font-weight:900;line-height:1}
+.hero .big .unit{font-size:15px;font-weight:900}
+.hero .what{font-weight:900;font-size:27px;line-height:1.3;letter-spacing:.01em}
+.hero .where{color:var(--muted);font-size:13.5px;font-weight:700}
+.hero .next{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);font-size:14px;display:flex;gap:10px;align-items:baseline}
+.hero .next .num{font-size:22px;font-weight:800}
+
+.hero .row2{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.hero .left{font-size:13px;color:var(--muted);text-align:right;white-space:nowrap}
+.hero .left .num{font-size:34px;font-weight:900;color:var(--lava);line-height:1}
+.bar{height:4px;background:var(--line);border-radius:2px;margin:10px 0 2px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--lava);border-radius:2px}
+.go{margin-top:18px;padding-top:16px;border-top:2px dashed var(--line)}
+.go .lbl{font-size:14px;color:var(--sea);font-weight:900;letter-spacing:.02em;display:flex;align-items:center;gap:6px}
+.go .lbl svg{width:15px;height:15px}
+.go .dest{display:flex;align-items:baseline;gap:12px;margin-top:4px;flex-wrap:wrap}
+.go .dest .num{font-size:40px;font-weight:900;line-height:1}
+.go .dest b{font-size:24px;line-height:1.3;font-weight:900}
+.go .sub{color:var(--muted);font-size:13px;margin-left:calc(30px*1.3 + 10px)}
+.go .actions{margin:10px 0 0}
+.later{margin-top:12px;font-size:13px}
+.later div{display:flex;gap:10px;padding:3px 0;color:var(--muted)}
+.later .num{font-size:16px;font-weight:800;color:var(--ink);width:42px}
+.sticky{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);border-bottom:1px solid var(--line);
+  margin:0 -18px;padding:9px 18px;display:none;align-items:baseline;gap:10px;font-size:13.5px;text-align:left;width:calc(100% + 36px)}
+.sticky.on{display:flex}
+.sticky .num{font-size:20px;font-weight:800}
+.sticky b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sticky span.m{color:var(--lava);font-weight:900;white-space:nowrap}
+.sim{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sim input{border:1px solid var(--line);border-radius:8px;background:var(--paper);padding:8px 10px;font-size:14px}
+.simflag{font-size:12px;color:var(--lava);margin-bottom:4px}
+
+/* 集合時間メモ */
+.meet{margin-top:12px;padding:12px 14px;border:1.5px solid var(--lava);border-radius:10px}
+.meet .mh{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--lava);font-weight:900}
+.meet .mh svg{width:15px;height:15px}
+.meet .mh .link{margin-left:auto;font-weight:500}
+.meet .mrow{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:2px}
+.meet .mt{font-size:44px;font-weight:900;line-height:1}
+.meet .place{font-size:14.5px;font-weight:900;margin-top:4px}
+.meet .plan{font-size:12px;color:var(--muted);margin-top:2px}
+.meet.soon{background:var(--lava-soft)}
+.meet.late{background:var(--lava);color:var(--paper);border-color:var(--lava)}
+.meet.late .mh,.meet.late .left,.meet.late .left .num,.meet.late .plan,.meet.late .link{color:var(--paper)}
+.meetadd{margin-top:12px;width:100%;justify-content:center;padding:11px;border-style:dashed;border-color:var(--lava);color:var(--lava);font-weight:900;background:transparent}
+.meetform{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.meetform label{display:block;font-size:12.5px;color:var(--muted);margin:0 0 4px}
+.meetform .quick{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 10px}
+.meetform .quick .btn{padding:5px 10px;font-size:13px}
+.meetform input{border:1px solid var(--line);border-radius:8px;background:var(--paper);padding:8px 10px;font-size:15px;width:100%}
+.meetform input[type=time]{font-family:"Barlow Condensed",system-ui,sans-serif;font-size:22px;font-weight:800;width:auto;min-width:130px}
+.meetform .acts{display:flex;gap:8px;align-items:center;margin-top:10px}
+.meetline{display:flex;align-items:center;gap:5px;font-size:13px;color:var(--lava);font-weight:900;margin-top:3px}
+.meetline svg{width:14px;height:14px}
+.dfield{display:grid;grid-template-columns:auto 1fr;gap:8px;margin-bottom:8px}
+.dfield input{border:1px solid var(--line);border-radius:8px;background:var(--paper);padding:7px 10px;font-size:14px;min-width:0}
+.dlab{font-size:12.5px;color:var(--muted);margin:4px 0}
+
+/* 一番上の集合パネル */
+header.compact{padding:14px 0 0;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+header.compact h1{font-size:15px}
+header.compact .meta{font-size:12px;margin:0}
+.hero .meet{margin-top:14px;padding:16px 18px 18px;border-width:2px;border-radius:14px;background:var(--paper)}
+.hero .meet.soon{background:var(--lava-soft)}
+.hero .meet.late{background:var(--lava)}
+.hero .meet .mh{font-size:14px}
+.hero .meet .mt{font-size:72px;letter-spacing:-.01em}
+.hero .meet .left{font-size:14px}
+.hero .meet .left .num{font-size:40px}
+.hero .meet .place{font-size:19px;margin-top:6px}
+.hero .meetadd{margin-top:14px;padding:18px;font-size:16px;border-width:2px;border-radius:14px}
+.hero .meetform{margin-top:14px;background:var(--paper)}
+.hero .links{margin-top:10px}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.links .btn{flex:1 1 auto;justify-content:center}
+
+/* 日程以外のタブでは上部を簡潔に */
+body.sub .hero .links,body.sub .hero .later,body.sub .hero .go .sub{display:none}
+body.sub .hero .meetadd{padding:12px}
+
+/* いま（琥珀）とつぎ（深緑）の色分け */
+.hero{background:none;border:0;padding:0;border-radius:0}
+.hero .blk-now,.hero .blk-next,.hero .blk-plain{padding:16px 16px 16px 18px;border-radius:4px 14px 14px 4px}
+.hero .blk-plain{background:var(--paper);border-left:6px solid var(--lava)}
+.hero .blk-now{background:var(--now-bg);border-left:6px solid var(--lava)}
+.hero .blk-next{background:var(--next-bg);border-left:6px solid var(--sea);margin-top:10px}
+.hero .blk-next .go{margin-top:0;padding-top:0;border-top:0}
+.hero .blk-next .go .dest .num{color:var(--sea)}
+.hero .blk-next .left .num{color:var(--sea)}
+.hero .blk-next .bar{background:rgba(15,82,72,.18)}
+.hero .blk-next .bar i{background:var(--sea)}
+.hero .blk-next .later{border-top:1.5px dashed rgba(15,82,72,.3);padding-top:8px}
+.hero .blk-next .btn,.hero .blk-now .btn{background:var(--paper)}
+.hero .blk-now .meet{background:var(--paper)}
+.hero .blk-now .meet.soon{background:#fff7e8;box-shadow:0 0 0 3px var(--lava-soft)}
+.hero .blk-now .bar{background:rgba(176,111,0,.2)}
+.hero .state{display:flex;align-items:center;gap:6px}
+.hero .blk-now .state::before,.hero .blk-next .go .lbl::before{content:"";width:10px;height:10px;border-radius:50%;flex:none}
+.hero .blk-now .state::before{background:var(--lava)}
+.hero .blk-next .go .lbl::before{background:var(--sea)}
+.hero .blk-next .go .lbl{font-size:14px}
+.hero .blk-now .meet.late{background:var(--lava);border-color:var(--lava);color:#fff;box-shadow:none}
+.hero .blk-now .meet.late .mh,.hero .blk-now .meet.late .left,.hero .blk-now .meet.late .left .num,
+.hero .blk-now .meet.late .plan,.hero .blk-now .meet.late .link,.hero .blk-now .meet.late .mt,.hero .blk-now .meet.late .place{color:#fff}
+.hero .meet .mrow{flex-wrap:wrap;row-gap:4px}
+.hero .meet .mt{font-size:clamp(50px,16vw,72px)}
+.hero .meet .left{min-width:0}
+.hero .meet .left .num{font-size:clamp(28px,9vw,40px)}
+/* 日程一覧の「つぎ」 */
+.it.nexti .card{background:var(--sea-soft)}
+.it.nexti .node i{background:var(--sea);border-color:var(--sea)}
+.it.nexti .kind{color:var(--sea)}
+
+/* day switch */
+.days{display:grid;grid-template-columns:repeat(3,1fr);margin:18px 0 6px;border-bottom:1px solid var(--line)}
+.days button{padding:10px 0 9px;text-align:center;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px}
+.days button b{display:block;font-size:14px}
+.days button span{font-size:12px}
+.days button[aria-selected="true"]{color:var(--ink);border-color:var(--sea)}
+.dayhead{display:flex;justify-content:space-between;align-items:baseline;margin:14px 0 4px}
+.dayhead h2{margin:0;font-size:16px}
+.dayhead small{color:var(--muted)}
+
+/* timeline */
+.tl{list-style:none;margin:6px 0 0;padding:0}
+.via{display:grid;grid-template-columns:64px 18px 1fr;color:var(--muted);font-size:12.5px;min-height:30px;align-items:center}
+.via .rail{justify-self:center;width:0;height:100%;border-left:2px dotted var(--line)}
+.via .lbl{display:flex;align-items:center;gap:6px;padding-left:10px}
+.via .lbl svg{width:15px;height:15px}
+.it{display:grid;grid-template-columns:64px 18px 1fr;align-items:start}
+.it .time{padding-top:8px;text-align:right;padding-right:10px;line-height:1.05}
+.it .time .s{font-size:22px;font-weight:800;display:block}
+.it .time .e{font-size:14px;color:var(--muted);font-weight:700}
+.it .node{justify-self:center;position:relative;height:100%;width:18px}
+.it .node::before{content:"";position:absolute;left:8px;top:0;bottom:0;border-left:2px solid var(--line)}
+.it .node i{position:absolute;left:3px;top:15px;width:12px;height:12px;border-radius:50%;background:var(--bg);border:2px solid var(--sea)}
+.tl > :first-child .node::before{top:15px}
+.tl > :last-child .node::before{bottom:auto;height:15px}
+.it .body{padding:6px 0 14px 10px;min-width:0}
+.it .card{width:100%;text-align:left;padding:8px 10px;border-radius:10px;display:block}
+.it .kind{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sea);font-weight:700}
+.it .kind svg{width:15px;height:15px}
+.it .ttl{font-weight:900;font-size:15.5px;line-height:1.45;margin-top:1px}
+.it .sub{color:var(--muted);font-size:13.5px;font-weight:700}
+.it .hasmemo{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);margin-top:3px}
+.it .hasmemo svg{width:13px;height:13px}
+.it.done .card{opacity:.55}
+.it.off{opacity:var(--dim)}
+.it.now .card{background:var(--lava-soft)}
+.it.now .node i{background:var(--lava);border-color:var(--lava);box-shadow:0 0 0 5px var(--lava-soft)}
+.it.now .kind{color:var(--lava)}
+.nowtag{font-size:11.5px;font-weight:900;color:var(--lava);margin-left:auto}
+.detail{padding:4px 10px 4px;display:none}
+.it.open .detail{display:block}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:14px;font-weight:700;text-decoration:none;background:var(--paper)}
+.btn:active{background:var(--line)}
+textarea{width:100%;font-weight:700;min-height:72px;resize:vertical;border:1px solid var(--line);border-radius:8px;background:var(--paper);padding:8px 10px;font-size:14px;line-height:1.5}
+.saved{font-size:12px;color:var(--muted);height:16px}
+
+/* sections */
+section.tab{display:none}
+section.tab.on{display:block}
+.blk{margin:22px 0}
+.blk h3{font-size:14px;margin:0 0 8px;color:var(--muted);font-weight:700}
+.rows{background:var(--paper);border-radius:12px;overflow:hidden}
+.row{display:flex;gap:12px;align-items:center;padding:12px 14px;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row .main{flex:1;min-width:0}
+.row .t{font-weight:900;font-size:14.5px;line-height:1.4}
+.row .d{color:var(--muted);font-size:13px;font-weight:700}
+.row .ic{width:36px;height:36px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;text-decoration:none;flex:none}
+.row .when{width:52px;flex:none;font-size:12.5px;color:var(--muted);line-height:1.3}
+.flight{display:grid;grid-template-columns:62px 1fr auto;gap:10px;align-items:center}
+.flight .no{font-weight:900;font-size:18px}
+.flight .route{font-size:14px}
+.flight .tm{font-size:18px;font-weight:800;text-align:right;line-height:1.1}
+.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{padding:10px 8px;font-size:13.5px;line-height:1.35}
+.seg button + button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--sea);color:var(--paper);font-weight:900}
+.note{font-size:12.5px;color:var(--muted);margin-top:8px}
+
+/* checklist / roster */
+.chk{display:flex;align-items:center;gap:12px;padding:11px 14px;border-top:1px solid var(--line)}
+.chk:first-child{border-top:0}
+.box{width:22px;height:22px;border:1.6px solid var(--muted);border-radius:6px;display:grid;place-items:center;flex:none}
+.box svg{width:15px;height:15px;opacity:0}
+.chk.ok .box{background:var(--sea);border-color:var(--sea);color:var(--paper)}
+.chk.ok .box svg{opacity:1}
+.chk.ok .lab{color:var(--muted);text-decoration:line-through}
+.chk .lab{flex:1;min-width:0}
+.chk .no{width:22px;color:var(--muted);font-size:15px;text-align:right}
+.chk .kana{display:block;font-size:11.5px;color:var(--muted)}
+.chk .x{color:var(--muted);padding:4px}
+.chk .x svg{width:16px;height:16px}
+.add{display:flex;gap:8px;margin-top:10px}
+.add input,.search{flex:1;border:1px solid var(--line);border-radius:8px;background:var(--paper);padding:9px 12px;font-size:14px;width:100%}
+.counter{display:flex;justify-content:space-between;align-items:baseline;margin:6px 0 10px}
+.counter .num{font-size:34px;font-weight:900}
+.counter .num small{font-size:18px;color:var(--muted);font-weight:700}
+.link{color:var(--sea);font-size:13.5px;text-decoration:underline;text-underline-offset:3px}
+
+/* みんなのメモ */
+.scenes{display:flex;gap:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;touch-action:pan-x;border-bottom:1px solid var(--line);margin:4px -18px 12px;padding:0 18px;scrollbar-width:none}
+.scenes::-webkit-scrollbar{display:none}
+.scenes button{flex:none;padding:10px 12px 9px;font-size:13.5px;font-weight:700;color:var(--muted);border-bottom:3px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.scenes button[aria-pressed="true"]{color:var(--ink);border-color:var(--sea)}
+.scenes button{display:inline-flex;align-items:center;gap:6px;height:44px}
+.cnt{display:inline-grid;place-items:center;min-width:21px;height:21px;padding:0 4px;border-radius:11px;border:1.5px solid currentColor;
+  font-family:"Barlow Condensed",system-ui,sans-serif;font-size:14px;font-weight:800;line-height:1}
+.cnt.zero{opacity:.45}
+.scenes button[aria-pressed="true"] .cnt{border-color:var(--sea);color:var(--sea)}
+.note-card{background:var(--paper);border-radius:12px;padding:14px 14px 12px;margin-bottom:10px;border:1px solid var(--line)}
+.note-card.private{background:var(--bg);border-style:dashed;border-color:var(--muted)}
+.note-card.private .sc{color:var(--muted)}
+.note-card .sc svg{width:13px;height:13px;vertical-align:-2px;margin-right:3px}
+.vis{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.vis button{padding:10px 6px;font-size:14px;font-weight:700;background:#fff}
+.vis button + button{border-left:1px solid var(--line)}
+.vis.kinds{grid-template-columns:repeat(3,1fr)}
+.kindbar{display:flex;gap:16px;margin:-4px 0 12px;font-size:13.5px;font-weight:700}
+.kindbar button{color:var(--muted);padding:2px 0;border-bottom:2px solid transparent}
+.kindbar button[aria-pressed="true"]{color:var(--ink);border-color:var(--lava)}
+.vis button[aria-pressed="true"]{background:var(--sea);color:#fff}
+.planmemo{background:var(--paper);border-radius:12px;padding:12px 14px;margin-bottom:10px;border:1px solid var(--line)}
+.planmemo .sc{font-size:12px;color:var(--muted);font-weight:900}
+.planmemo .nt{font-size:15.5px;font-weight:900;margin-top:2px}
+.planmemo .nb{font-size:14.5px;margin-top:3px;white-space:pre-wrap;word-break:break-word}
+.subhead{font-size:13.5px;color:var(--muted);font-weight:900;margin:18px 0 8px}
+.note-card .sc{font-size:12px;color:var(--sea);font-weight:900}
+.note-card .nt{font-size:18px;font-weight:900;line-height:1.35;margin-top:2px}
+.note-card .nb{font-size:14.5px;margin-top:4px;white-space:pre-wrap;word-break:break-word}
+.note-card .who{font-size:12.5px;color:var(--muted);font-weight:700;margin-top:6px}
+.note-card .wants{font-size:12.5px;color:var(--lava);font-weight:700;margin-top:4px}
+.note-card .links{margin-top:10px}
+.note-card .links .btn{flex:0 1 auto}
+.want{border-color:var(--lava)!important;color:var(--lava)}
+.want[aria-pressed="true"]{background:var(--lava)!important;color:#fff!important}
+.note-form{background:var(--paper);border:1.5px solid var(--sea);border-radius:12px;padding:14px;margin-bottom:14px}
+.note-form label{display:block;font-size:12.5px;color:var(--muted);font-weight:700;margin:10px 0 4px}
+.note-form label:first-child{margin-top:0}
+.note-form input,.note-form select,.note-form textarea{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;padding:9px 10px;font-size:15px;font-weight:700;font-family:inherit}
+.note-form textarea{min-height:64px}
+.note-form .acts{display:flex;gap:8px;align-items:center;margin-top:12px}
+.write{width:100%;justify-content:center;padding:13px;border:2px dashed var(--sea);color:var(--sea);font-size:15px;background:transparent;margin-bottom:14px}
+.empty{color:var(--muted);font-weight:700;font-size:14px;padding:18px 4px;text-align:center}
+.tonight{display:flex;align-items:center;gap:6px;margin-top:10px;font-size:14px;font-weight:900;color:var(--sea);text-decoration:underline;text-underline-offset:3px}
+.tonight svg{width:16px;height:16px}
+
+/* メンバー */
+.mem{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line)}
+.mem:first-child{border-top:0}
+.mem .no{width:24px;text-align:right;color:var(--muted);font-size:16px}
+.mem .nm{font-weight:700;font-size:15.5px;line-height:1.35}
+.mem .kana{display:block;font-size:12px;color:var(--muted);font-weight:700}
+
+/* nav */
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom,0px);z-index:10}
+nav .in{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
+nav button{padding:9px 0 8px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;white-space:nowrap;color:var(--muted);border-top:2px solid transparent;margin-top:-1px}
+nav button svg{width:22px;height:22px}
+nav button[aria-current="page"]{color:var(--ink);border-color:var(--sea);font-weight:900}
+@media (prefers-reduced-motion:no-preference){
+  .it.now .node i{animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{50%{box-shadow:0 0 0 9px transparent}}
+}
+
+/* ---- 使い心地 ---- */
+html{touch-action:manipulation;-webkit-text-size-adjust:100%}
+*{-webkit-tap-highlight-color:transparent}
+/* iPhoneで入力欄をタップしたときに画面が拡大されないよう16px以上に */
+.dfield input,.sim input,textarea,.add input,.search,.note-form input,.note-form select,.note-form textarea,.meetform input:not([type=time]){font-size:16px}
+button,.btn,a.ic{transition:transform .08s ease,opacity .08s ease}
+button:active,.btn:active,a.ic:active{transform:scale(.97);opacity:.8}
+@media (prefers-reduced-motion:no-preference){
+  section.tab.on{animation:tabin .18s ease-out}
+  @keyframes tabin{from{opacity:0}to{opacity:1}}
+}
+nav button{position:relative}
+nav .dot{position:absolute;top:7px;left:calc(50% + 9px);width:8px;height:8px;border-radius:50%;background:var(--lava);box-shadow:0 0 0 2px var(--paper)}
+.syncbar{display:flex;align-items:center;gap:8px;justify-content:flex-end;font-size:12.5px;color:var(--muted);font-weight:700;margin:2px 0 6px}
+.syncbar button{display:inline-flex;align-items:center;gap:4px;color:var(--sea);font-weight:900;padding:4px 2px}
+.syncbar svg{width:15px;height:15px}
+.syncbar.spin svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading{color:var(--muted);font-weight:700;text-align:center;padding:24px 0}
+
+/* トースト */
+#toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(12px);
+  background:var(--ink);color:#fff;font-size:14px;font-weight:700;padding:11px 16px;border-radius:10px;max-width:calc(100% - 36px);
+  opacity:0;pointer-events:none;transition:opacity .18s,transform .18s;z-index:30;display:flex;align-items:center;gap:8px}
+#toast.on{opacity:1;transform:translateX(-50%)}
+#toast.err{background:#8a2d14}
+#toast svg{width:17px;height:17px}
+
+/* 確認ダイアログ */
+#dlg{position:fixed;inset:0;z-index:40;display:none;align-items:center;justify-content:center;background:rgba(20,24,20,.42);padding:20px}
+#dlg.on{display:flex}
+#dlg .dlgbox{width:100%;max-width:340px;background:var(--paper);border-radius:16px;padding:18px 18px 14px;box-shadow:0 10px 40px rgba(0,0,0,.25)}
+@media (prefers-reduced-motion:no-preference){#dlg.on .dlgbox{animation:up .2s ease-out}@keyframes up{from{transform:scale(.94);opacity:0}to{transform:none;opacity:1}}}
+#dlg .tt{font-size:17px;font-weight:900;line-height:1.4}
+#dlg .mm{font-size:14.5px;color:var(--muted);font-weight:700;margin-top:6px;line-height:1.55}
+#dlg input{width:100%;margin-top:12px;border:1.5px solid var(--line);border-radius:10px;padding:11px 12px;font-size:16px;font-weight:700;background:#fff}
+#dlg .bt{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+#dlg .bt button{padding:13px 8px;border-radius:10px;font-size:15px;font-weight:900;border:1.5px solid var(--line);background:#fff}
+#dlg .bt .ok{background:var(--sea);border-color:var(--sea);color:#fff}
+#dlg .bt .ok.danger{background:#8a2d14;border-color:#8a2d14}
+
+/* ---- 使い心地 2 ---- */
+.days{position:sticky;top:0;z-index:4;background:var(--bg)}
+body.barOn .days{top:46px}
+#topbar{position:fixed;left:0;right:0;top:0;z-index:12;background:var(--paper);border-bottom:1px solid var(--line);
+  padding:0 18px;height:46px;display:none;align-items:center;gap:10px;font-size:14px;font-weight:700;
+  padding-top:env(safe-area-inset-top,0px);box-sizing:content-box;width:auto;text-align:left}
+#topbar.on{display:flex}
+#topbar .lb{font-size:12px;color:var(--muted);font-weight:900;white-space:nowrap}
+#topbar .lb.now{color:var(--lava)}
+#topbar .lb.next{color:var(--sea)}
+#topbar .num{font-size:21px;font-weight:800}
+#topbar b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:900}
+#topbar .m{font-weight:900;white-space:nowrap}
+#topbar .m.now{color:var(--lava)}
+#topbar .m.next{color:var(--sea)}
+#sheet{position:fixed;inset:0;z-index:35;display:none;align-items:flex-end;justify-content:center;background:rgba(20,24,20,.42)}
+#sheet.on{display:flex}
+#sheet .panel{position:relative;width:100%;max-width:560px;max-height:92%;background:var(--bg);border-radius:18px 18px 0 0;display:flex;flex-direction:column;
+  box-shadow:0 -8px 40px rgba(0,0,0,.25)}
+@media (prefers-reduced-motion:no-preference){#sheet.on .panel{animation:sheetup .22s ease-out}@keyframes sheetup{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}}
+#sheet .hd{display:flex;align-items:center;gap:10px;padding:10px 12px 8px 18px;flex:none}
+#sheet .hd::before{content:"";position:absolute;left:50%;top:7px;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:var(--line)}
+#sheet .hd .tt{flex:1;font-size:17px;font-weight:900;padding-top:8px}
+#sheet .hd .x{width:40px;height:40px;display:grid;place-items:center;border-radius:50%;color:var(--muted);margin-top:6px}
+#sheet .hd .x svg{width:20px;height:20px}
+#sheet .bd{overflow-y:auto;padding:0 16px calc(16px + env(safe-area-inset-bottom,0px));-webkit-overflow-scrolling:touch}
+#sheet .note-form{border:0;background:transparent;padding:0 0 4px;margin:0}
+#sheet .note-form input,#sheet .note-form select,#sheet .note-form textarea{background:var(--paper)}
+#sheet .note-form .acts{position:sticky;bottom:0;background:var(--bg);padding:12px 0 4px;margin-top:8px;border-top:1px solid var(--line)}
+#sheet .note-form .acts .btn{flex:1;justify-content:center;padding:13px;font-size:15.5px}
+body.sheetOpen{overflow:hidden}
+#ptr{height:0;overflow:hidden;text-align:center;color:var(--muted);font-size:13px;font-weight:700;transition:height .15s}
+#ptr.drag{transition:none}
+
+/* 遅れ */
+.plantag{display:block;font-size:11px;color:var(--muted);text-decoration:line-through;margin-top:2px;font-weight:700}
+.delaybar{display:flex;align-items:center;gap:10px;justify-content:space-between;margin:0 0 10px;padding:10px 14px;border-radius:10px;
+  background:#fff;border:1.5px solid var(--lava);color:var(--lava);font-weight:900;font-size:14.5px}
+.delaybar span{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.delaybar small{color:var(--muted);font-weight:700;font-size:12px}
+.delaybar svg{width:17px;height:17px}
+.delaybar.plain{border-color:var(--line);color:var(--muted);font-size:13.5px;padding:8px 14px}
+.delaybar .link{color:var(--sea);font-weight:900;white-space:nowrap}
+.delayform{margin:0 0 10px;padding:14px;border-radius:12px;background:#fff;border:1.5px solid var(--lava)}
+.delayform .dh{display:flex;align-items:center;gap:6px;font-weight:900;font-size:15px}
+.delayform .dh svg{width:17px;height:17px;color:var(--lava)}
+.delayform .chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0 8px}
+.delayform .chips .btn{justify-content:center;padding:10px 4px}
+.delayform .chips .btn[aria-pressed="true"]{background:var(--lava);border-color:var(--lava);color:#fff}
+.delayform .acts{display:flex;justify-content:flex-end;margin-top:6px}
+
+/* マスコット */
+header.compact h1{display:flex;align-items:center;gap:8px}
+.mascot-s{width:30px;height:30px;flex:none}
+.hero-mascot{float:right;width:104px;height:104px;margin:-6px -6px 0 8px}
+.end-mascot{display:block;width:120px;height:120px;margin:4px auto 6px}
+.empty-mascot{display:block;width:84px;height:84px;margin:0 auto 6px;opacity:.95}
+
+/* 端までスクロールしたら止める（上下に引っぱられて伸びる動きをなくす） */
+html,body{overscroll-behavior:none}
+#sheet .bd,#dlg,.scenes{overscroll-behavior:contain}
+
+/* ---- 見やすさの設定 ---- */
+/* 文字の大きさ：画面全体をまとめて拡大（ボタンや余白も一緒に大きくなる） */
+html[data-size="l"] body{zoom:1.15}
+html[data-size="xl"] body{zoom:1.3}
+/* くっきり表示：薄い文字と線を濃く、枠を太く */
+html.hc{--muted:#2a2f27;--line:#6f7766;--sea:#0a3f37;--lava:#8a5200}
+html.hc .btn,html.hc .vis,html.hc .seg,html.hc .rows,html.hc .note-card,html.hc .meet,html.hc .delaybar{border-width:2px}
+html.hc .it .node::before{border-left-width:3px}
+html.hc .kana,html.hc .note,html.hc .where,html.hc .d,html.hc .who,html.hc .plan{color:var(--ink)}
+html.hc .cnt.zero{opacity:.7}
+html.hc .it.done .card{opacity:.8}
+html.hc :focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+/* 動きを減らす */
+html.calm *,html.calm *::before,html.calm *::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+/* 設定画面 */
+.a11y .opt{display:grid;grid-template-columns:repeat(3,1fr);border:1.5px solid var(--line);border-radius:10px;overflow:hidden;margin-top:6px}
+.a11y .opt button{padding:12px 4px;font-weight:900;background:#fff;line-height:1.2}
+.a11y .opt button + button{border-left:1.5px solid var(--line)}
+.a11y .opt button[aria-pressed="true"]{background:var(--sea);color:#fff}
+.a11y .opt .s1{font-size:14px}.a11y .opt .s2{font-size:17px}.a11y .opt .s3{font-size:20px}
+.a11y .sw{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--line);width:100%;text-align:left;background:var(--paper)}
+.a11y .sw:first-child{border-top:0}
+.a11y .sw .main{flex:1;min-width:0}
+.a11y .sw .t{font-weight:900;font-size:15px}
+.a11y .sw .d{font-size:12.5px;color:var(--muted);font-weight:700}
+.a11y .tg{width:46px;height:28px;border-radius:14px;background:var(--line);position:relative;flex:none}
+.a11y .tg::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s}
+.a11y .sw[aria-checked="true"] .tg{background:var(--sea)}
+.a11y .sw[aria-checked="true"] .tg::after{left:21px}
+
+details.a11y{background:var(--paper);border:1.5px solid var(--line);border-radius:12px;padding:0 14px}
+details.a11y summary{list-style:none;display:flex;align-items:center;gap:8px;padding:14px 0;font-weight:900;font-size:15px;cursor:pointer}
+details.a11y summary::-webkit-details-marker{display:none}
+details.a11y summary svg{width:18px;height:18px;color:var(--sea)}
+details.a11y summary .sumv{margin-left:auto;font-size:12.5px;color:var(--muted);font-weight:700}
+details.a11y summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:-4px 2px 0 4px;transition:transform .15s}
+details.a11y[open] summary::after{transform:rotate(225deg);margin-top:4px}
+details.a11y[open]{padding-bottom:14px}
+details.a11y .rows{border:1px solid var(--line)}
+/* 電話の確認 */
+#calldlg{position:fixed;inset:0;z-index:41;display:none;align-items:center;justify-content:center;background:rgba(20,24,20,.42);padding:20px}
+#calldlg.on{display:flex}
+#calldlg .cbox{width:100%;max-width:340px;background:var(--paper);border-radius:16px;padding:18px;box-shadow:0 10px 40px rgba(0,0,0,.25);text-align:center}
+#calldlg .cn{font-size:15px;font-weight:900;color:var(--muted)}
+#calldlg .cnum{font-family:"Barlow Condensed",system-ui,sans-serif;font-size:38px;font-weight:800;letter-spacing:.02em;margin:4px 0 2px;user-select:all;-webkit-user-select:all}
+#calldlg .cact{display:grid;gap:8px;margin-top:14px}
+#calldlg .cact a,#calldlg .cact button{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border-radius:10px;font-size:16px;font-weight:900;text-decoration:none;border:1.5px solid var(--line);background:#fff;color:var(--ink)}
+#calldlg .cact .call{background:var(--sea);border-color:var(--sea);color:#fff}
+#calldlg .cact svg{width:19px;height:19px}
+#calldlg .cnote{font-size:12.5px;color:var(--muted);font-weight:700;margin-top:10px;line-height:1.5}
+
+/* ---- スマホの狭い画面向け ---- */
+/* 日本語は語の途中で折り返さないように（対応ブラウザのみ） */
+.what,.go .dest b,.nt,.ttl,.where,.sub,.nb,.dh{line-break:strict}
+.hero .row2{flex-wrap:wrap}
+.hero .row2 .left{margin-left:auto}
+.links .btn,.btn{white-space:nowrap}
+@media (max-width:430px){
+  .wrap{padding-left:14px;padding-right:14px}
+  .scenes{margin-left:-14px;margin-right:-14px;padding:0 14px}
+  .hero .blk-now,.hero .blk-next,.hero .blk-plain{padding:14px 12px 14px 14px}
+  .hero .what{font-size:23px}
+  .go .dest{gap:8px}
+  .go .dest .num{font-size:34px}
+  .go .dest b{font-size:20px}
+  .hero .left .num{font-size:28px}
+  .hero .state,.go .lbl{font-size:13px}
+  .hero .meet .mt{font-size:clamp(46px,15vw,64px)}
+  .hero .meet .place{font-size:17px}
+  .delaybar{padding:9px 12px;font-size:13.5px}
+  .btn{padding:8px 10px;font-size:13.5px;gap:5px}
+  .btn svg.i{width:16px;height:16px}
+  .links{gap:6px}
+  .it{grid-template-columns:54px 16px 1fr}
+  .via{grid-template-columns:54px 16px 1fr}
+  .it .time{padding-right:6px}
+  .it .time .s{font-size:20px}
+  .it .body{padding-left:6px}
+  .it .card{padding:7px 8px}
+  .it .ttl{font-size:15px}
+  .row{padding:11px 12px;gap:10px}
+  .row .when{width:44px;font-size:12px}
+  .flight{grid-template-columns:54px 1fr auto;gap:8px}
+  .note-card{padding:12px 12px 10px}
+  .note-card .nt{font-size:17px}
+  nav button{font-size:10.5px}
+  header.compact h1{font-size:14px}
+  header.compact .meta{font-size:11.5px}
+}
+@media (max-width:360px){
+  .hero .what{font-size:21px}
+  .go .dest b{font-size:18px}
+  .go .dest .num{font-size:30px}
+  .btn{padding:7px 8px;font-size:13px}
+  nav button{font-size:10px}
+}
+
+@media (max-width:430px){
+  .hero-mascot{width:84px;height:84px;margin:-4px -4px 0 6px}
+  .hero .big .num{font-size:50px}
+}
+
+/* ---- 絞り込み（5等分） ---- */
+.sgrid{display:grid;grid-template-columns:repeat(5,1fr);border:1.5px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;margin:4px 0 10px}
+.sgrid button{display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 2px 6px;font-size:12.5px;color:var(--muted)}
+.sgrid button + button{border-left:1px solid var(--line)}
+.sgrid button b{font-weight:900;white-space:nowrap}
+.sgrid button .num{font-size:17px;font-weight:800;line-height:1.1;color:var(--ink)}
+.sgrid button.z .num{color:var(--muted);opacity:.6}
+.sgrid button[aria-pressed="true"]{background:var(--sea);color:#fff}
+.sgrid button[aria-pressed="true"] .num{color:#fff;opacity:1}
+.kindbar{margin:0 0 10px}
+
+/* ---- 全体をコンパクトに（項目同士の間隔を詰める） ---- */
+.hero{margin:10px 0 6px}
+.hero .blk-now,.hero .blk-next,.hero .blk-plain{padding:12px 12px 12px 14px}
+.hero .blk-next{margin-top:8px}
+.go{margin-top:12px;padding-top:10px}
+.hero .meet,.hero .meetadd,.hero .meetform{margin-top:10px}
+.hero .meet{padding:12px 14px 14px}
+.hero .meetadd{padding:12px}
+.links{margin-top:8px;gap:6px}
+.later{margin-top:8px}
+.delaybar{margin:0 0 8px;padding:8px 12px}
+.days{margin:12px 0 2px}
+.days button{padding:7px 0 6px}
+.dayhead{margin:8px 0 2px}
+.via{min-height:22px}
+.it .time{padding-top:6px}
+.it .node i{top:12px}
+.tl > :first-child .node::before{top:12px}
+.tl > :last-child .node::before{height:12px}
+.it .body{padding:3px 0 6px 8px}
+.it .card{padding:6px 8px}
+.blk{margin:14px 0}
+.blk h3{margin:0 0 6px}
+.row{padding:9px 12px}
+.chk{padding:8px 12px}
+.mem{padding:7px 12px}
+.note{margin-top:6px}
+.note-card{padding:11px 12px 10px;margin-bottom:8px}
+.note-card .nb{margin-top:2px}
+.note-card .who{margin-top:4px}
+.note-card .links{margin-top:8px}
+.btn{padding:6px 10px}
+.write{padding:10px;margin-bottom:10px}
+.sgrid{margin:2px 0 8px}
+.sgrid button{padding:5px 2px 4px}
+.kindbar{margin:0 0 8px}
+.syncbar{margin:0 0 4px}
+.counter{margin:2px 0 6px}
+.counter .num{font-size:28px}
+.add{margin-top:8px}
+details.a11y summary{padding:11px 0}
+details.a11y[open]{padding-bottom:10px}
+nav button{padding:6px 0 5px}
+nav button svg{width:20px;height:20px}
+.wrap{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+@media (max-width:430px){
+  .hero .blk-now,.hero .blk-next,.hero .blk-plain{padding:11px 10px 11px 12px}
+  .btn{padding:6px 9px}
+  .it .body{padding-left:5px}
+}
+
+/* ---- メモ入力シートを1画面に収める ---- */
+#sheet .panel{max-height:94%}
+#sheet .hd{padding:6px 8px 4px 16px}
+#sheet .hd::before{top:5px}
+#sheet .hd .tt{font-size:16px;padding-top:6px}
+#sheet .hd .x{width:36px;height:36px;margin-top:4px}
+#sheet .bd{padding:0 14px calc(10px + env(safe-area-inset-bottom,0px))}
+#sheet .note-form label{margin:7px 0 3px;font-size:12px}
+#sheet .note-form label:first-child{margin-top:0}
+#sheet .note-form .vis button{padding:8px 4px;font-size:14px}
+#sheet .note-form input,#sheet .note-form select{padding:7px 10px}
+#sheet .note-form textarea{min-height:46px;padding:7px 10px;resize:none}
+#sheet .note-form .acts{padding:8px 0 2px;margin-top:8px}
+#sheet .note-form .acts .btn{padding:10px}
+#sheet .note-form .note{margin-top:4px}
+
+/* ---- 参加者専用の鍵 ---- */
+#gate{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;background:var(--bg);padding:24px}
+body.locked #gate{display:flex}
+body.locked .wrap,body.locked nav,body.locked #topbar{visibility:hidden}
+#gate .gbox{width:100%;max-width:340px;text-align:center}
+#gate .gm{width:96px;height:96px}
+#gate .gt{font-size:19px;font-weight:900;margin-top:8px;line-height:1.45}
+#gate .gm2{font-size:14px;color:var(--muted);font-weight:700;margin-top:6px;line-height:1.6}
+#gate .gpin{display:none;gap:8px;margin-top:16px}
+#gate.pin .gpin{display:flex}
+#gate input{flex:1;min-width:0;font-size:18px;letter-spacing:.04em;text-align:center;padding:10px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-family:"Barlow Condensed",system-ui,sans-serif;font-weight:800}
+#gate .gok{padding:0 18px;border-radius:10px;background:var(--sea);color:#fff;font-weight:900;font-size:16px}
+#gate .gerr{color:#8a2d14;font-weight:900;font-size:13.5px;min-height:20px;margin-top:8px}
+
+#gate .gname{display:none;width:100%;margin-top:16px;font-size:18px;text-align:center;padding:11px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-weight:900;font-family:inherit}
+#gate.setup .gname{display:block}
+#gate.setup .gpin{margin-top:8px}
+
+/* ---- 鍵の画面（入力しやすく） ---- */
+#gate .gbox{max-width:360px}
+#gate .gm{width:84px;height:84px}
+#gate .gform{display:none;text-align:left;margin-top:18px}
+#gate.pin .gform{display:block}
+#gate .glab{display:block;font-size:12.5px;font-weight:900;color:var(--muted);margin:12px 0 4px}
+#gate .glab:first-child{margin-top:0}
+#gate .gname-l,#gate .gname{display:none}
+#gate.setup .gname-l,#gate.setup .gname{display:block}
+#gate .gname{margin-top:0;text-align:left;font-size:17px}
+#gate .gpin{display:flex;position:relative;margin-top:0}
+#gate.setup .gpin{margin-top:0}
+#gate .gpin input{text-align:left;font-family:inherit;font-size:17px;font-weight:900;letter-spacing:.02em;padding:11px 48px 11px 12px}
+#gate .geye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:40px;height:40px;display:grid;place-items:center;color:var(--muted);border-radius:8px}
+#gate .geye svg{width:20px;height:20px}
+#gate .geye[aria-pressed="true"]{color:var(--sea)}
+#gate .gok{display:block;width:100%;margin-top:16px;padding:14px;font-size:16.5px;border-radius:12px}
+#gate .gerr{text-align:left}
+/* ---- ボタンを押しやすい高さに ---- */
+.btn{min-height:38px}
+.links .btn{min-height:38px}
+/* ---- 済んだ予定は薄く ---- */
+.it.done .time,.it.done .node i{opacity:.5}
+.loading-s{color:var(--muted);font-weight:700;font-size:13.5px;padding:10px 12px}
+
+/* 開いた直後から鍵の画面を表示（中身は確認が済むまで描かない） */
+body.locked .wrap,body.locked nav,body.locked #topbar,body.locked #sheet{display:none!important}
+#gate .gspin{width:28px;height:28px;margin:14px auto 0;border:3px solid var(--line);border-top-color:var(--sea);border-radius:50%;animation:spin .8s linear infinite;display:none}
+#gate.checking .gspin{display:block}
+
+/* ---- 下のメニューを押しやすく（ホーム画面から開いたときも） ---- */
+nav{padding-bottom:max(env(safe-area-inset-bottom,0px),6px)}
+nav button{padding:10px 0 8px;font-size:11.5px;gap:3px;min-height:58px;justify-content:center}
+nav button svg{width:24px;height:24px}
+nav button[aria-current="page"]{border-top-width:3px}
+/* ホーム画面から開いたとき：画面下のバー（ホームインジケーター）とぶつからないよう余白を足す */
+body.standalone nav{padding-bottom:max(env(safe-area-inset-bottom,0px),22px)}
+body.standalone .wrap{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+.wrap{padding-bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+@media (max-width:360px){nav button{font-size:10.5px}nav button svg{width:22px;height:22px}}
+#toast{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+body.standalone #toast{bottom:calc(108px + env(safe-area-inset-bottom,0px))}
+
+/* ---- 下のメニューを深緑のバーに（中身との境目をはっきり） ---- */
+nav{background:var(--sea);border-top:0;box-shadow:0 -2px 10px rgba(15,82,72,.18)}
+nav button{color:rgba(255,255,255,.72);border-top-color:transparent}
+nav button[aria-current="page"]{color:#fff;border-top-color:var(--lava-on-sea,#f0b54a)}
+nav button:active{opacity:.75}
+nav .dot{background:#f0b54a;box-shadow:0 0 0 2px var(--sea)}
+html.hc nav button{color:rgba(255,255,255,.9)}
+html.hc nav button[aria-current="page"]{color:#fff;text-decoration:underline;text-underline-offset:3px}
+
+/* ---- 下のメニューのアイコンと文字をひと回り大きく ---- */
+nav button{font-size:12.5px;gap:4px;min-height:64px;padding:10px 0 9px;letter-spacing:-.02em}
+nav button svg{width:28px;height:28px;stroke-width:1.9}
+nav .dot{top:7px;left:calc(50% + 11px);width:9px;height:9px}
+.wrap{padding-bottom:calc(90px + env(safe-area-inset-bottom,0px))}
+body.standalone .wrap{padding-bottom:calc(106px + env(safe-area-inset-bottom,0px))}
+#toast{bottom:calc(98px + env(safe-area-inset-bottom,0px))}
+body.standalone #toast{bottom:calc(114px + env(safe-area-inset-bottom,0px))}
+@media (max-width:380px){nav button{font-size:11.5px;letter-spacing:-.04em}nav button svg{width:26px;height:26px}}
+@media (max-width:340px){nav button{font-size:10.5px}nav button svg{width:24px;height:24px}}
+
+.scenehead{display:flex;align-items:baseline;gap:8px;font-size:13.5px;font-weight:900;color:var(--sea);margin:14px 2px 6px;padding-bottom:4px;border-bottom:1.5px solid var(--line)}
+.scenehead:first-child{margin-top:4px}
+.scenehead .num{font-size:15px;color:var(--muted)}
+
+details.memfold .sumv .num{font-size:15px;color:var(--ink);font-weight:800}
+
+/* 持ち物の候補 */
+.hints{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px}
+.hints .hl{font-size:12.5px;color:var(--muted);font-weight:900;margin-right:2px}
+.hint{display:inline-flex;align-items:center;gap:3px;padding:6px 10px;border:1.5px dashed var(--line);border-radius:8px;font-size:13px;font-weight:700;color:var(--ink);background:transparent;min-height:34px}
+.hint svg{width:14px;height:14px;color:var(--sea)}
+
+/* 天気（1行のコンパクト表示） */
+.wxcard{display:grid;grid-template-columns:repeat(3,1fr);background:var(--paper);border:1px solid var(--line);border-radius:10px;margin:0 0 8px;overflow:hidden}
+.wxcol{padding:6px 6px 5px;border-left:1px solid var(--line);min-width:0}
+.wxcol:first-child{border-left:0}
+.wxcol.today{background:var(--lava-soft)}
+.wxd{font-size:11px;font-weight:900;color:var(--muted);line-height:1.2;white-space:nowrap}
+.wxd span{margin-left:4px;color:var(--ink)}
+.wxm{display:flex;align-items:center;gap:5px;margin-top:2px;white-space:nowrap}
+.wxi{width:20px;height:20px;color:var(--sea);flex:none}
+.wxt{font-size:13px;color:var(--muted);font-weight:700}
+.wxt b{font-size:16px;color:var(--ink);font-weight:800}
+.wxr{display:inline-flex;align-items:center;gap:2px;font-size:11.5px;color:var(--muted);font-weight:700;margin-left:auto}
+.wxr svg{width:12px;height:12px}
+@media (max-width:360px){.wxt b{font-size:14px}.wxr{font-size:10.5px}}
+.btn.album{width:100%;justify-content:center;padding:12px;border-color:var(--sea);color:var(--sea)}
+
+/* 共有アルバムへの細いバー（日程タブ） */
+.albumbar{display:flex;align-items:center;gap:8px;margin:14px 0 4px;padding:9px 12px;border-radius:10px;background:var(--paper);border:1px solid var(--line);text-decoration:none;font-size:13.5px}
+.albumbar svg{width:18px;height:18px;color:var(--sea);flex:none}
+.albumbar svg:last-child{width:15px;height:15px;color:var(--muted)}
+.albumbar b{font-weight:900}
+.albumbar span{flex:1;color:var(--muted);font-weight:700;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* パスワードなしの運用：パスワード欄を出さない */
+#gate.nopass .gpin-l,#gate.nopass .gpin{display:none}
+
+/* 合言葉なしのアドレスで開いているときの案内 */
+.fixbar{display:flex;align-items:flex-start;gap:8px;margin:0 0 10px;padding:10px 12px;border-radius:10px;background:#fff;border:1.5px solid var(--sea);color:var(--ink);text-decoration:none;font-size:13px;line-height:1.5}
+.fixbar svg{width:18px;height:18px;color:var(--sea);flex:none;margin-top:2px}
+.fixbar b{color:var(--sea)}
+.fixbar.strong{background:var(--lava-soft);border-color:var(--lava)}
+.fixbar.strong b,.fixbar.strong svg{color:var(--lava)}
+</style>
+</head>
+<body class="locked">
+<div class="wrap">
+  <div class="hero" id="hero" role="region" aria-label="いま・つぎ"></div>
+  <div id="ptr"></div>
+  <section class="tab on" id="t-plan">
+    <div id="weather"></div>
+    <div class="days" role="tablist" id="days"></div>
+    <div id="daybody"></div>
+  </section>
+
+  <section class="tab" id="t-info"></section>
+  <section class="tab" id="t-my"></section>
+  <section class="tab" id="t-notes"></section>
+</div>
+
+<nav aria-label="画面の切り替え"><div class="in" id="nav"></div></nav>
+<button id="topbar" aria-label="先頭に戻る"></button>
+<div id="sheet" role="dialog" aria-modal="true"><div class="panel">
+  <div class="hd"><div class="tt" id="sheet-t"></div><button class="x" data-note="cancel" aria-label="閉じる"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="bd" id="sheet-b"></div>
+</div></div>
+<img id="mascot-src" src="data:image/png;base64,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" alt="" hidden>
+<div id="calldlg" role="dialog" aria-modal="true" aria-labelledby="call-n"><div class="cbox">
+  <div class="cn" id="call-n"></div><div class="cnum" id="call-num"></div>
+  <div class="cact">
+    <a class="call" id="call-go" href="#" target="_blank" rel="noopener"></a>
+    <button id="call-copy"></button>
+    <button id="call-x">閉じる</button>
+  </div>
+  <div class="cnote">「電話をかける」で発信画面が出ないときは、番号をコピーして電話アプリに貼り付けてください。</div>
+</div></div>
+<div id="gate" class="checking" role="dialog" aria-modal="true" aria-labelledby="gate-t"><div class="gbox">
+  <img class="gm" src="" data-mascot alt="">
+  <div class="gt" id="gate-t">確認しています…</div>
+  <div class="gm2" id="gate-m"></div>
+  <div class="gform">
+    <label class="glab gname-l" for="gate-name">フルネーム（漢字）</label>
+    <input id="gate-name" class="gname" autocomplete="name" placeholder="フルネームを漢字で入力">
+    <label class="glab gpin-l" for="gate-i">パスワード</label>
+    <div class="gpin" id="gate-pin">
+      <input id="gate-i" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="幹事から伝えられたもの">
+      <button class="geye" id="gate-eye" type="button" aria-label="パスワードを表示" aria-pressed="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+    </div>
+    <button class="gok" id="gate-o">開く</button>
+  </div>
+  <div class="gspin" aria-hidden="true"></div>
+  <div class="gerr" id="gate-e" role="alert"></div>
+</div></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-t"><div class="dlgbox">
+  <div class="tt" id="dlg-t"></div><div class="mm" id="dlg-m"></div>
+  <input id="dlg-i" style="display:none">
+  <div class="bt"><button id="dlg-c">キャンセル</button><button class="ok" id="dlg-o">OK</button></div>
+</div></div>
+
+<script>
+/* 表示中にエラーが起きたら、真っ白にせず画面に内容を出す */
+(function(){
+  function show(msg){
+    var el=document.getElementById('hero'); if(!el) return;
+    if(el.getAttribute('data-err')) return; el.setAttribute('data-err','1');
+    el.insertAdjacentHTML('afterbegin','<div style="background:#fff;border:2px solid #8a2d14;border-radius:12px;padding:14px;margin:12px 0;color:#8a2d14;font-weight:700;font-size:14px;line-height:1.6">'
+      +'表示中にエラーが起きました。この画面のスクリーンショットを送ってください。<br><code style="display:block;margin-top:6px;color:#141814;font-size:12.5px;word-break:break-all">'
+      +String(msg).replace(/[<>&]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c];})+'</code></div>');
+  }
+  window.__showErr=show;
+  window.addEventListener('error',function(e){show((e.message||'error')+(e.lineno?'（'+e.lineno+'行目）':''));});
+  window.addEventListener('unhandledrejection',function(e){show('処理エラー: '+(e.reason&&e.reason.message||e.reason));});
+})();
+</script>
+<script>
+const MASCOT=(document.getElementById('mascot-src')||{}).src||'';
+const mascotImg=(cls)=>`<img class="${cls}" src="${MASCOT}" alt="">`;
+document.querySelectorAll('[data-mascot]').forEach(i=>i.src=MASCOT);
+/* ---------- icons (line) ---------- */
+const P={
+  plane:'<path d="M10.5 13.5 4 12l-1.5-1.5 7.5-1L14 5c1-1 3-1.5 3.5-1s0 2.5-1 3.5l-4.5 4 -1 7.5L9.5 17.5 8 11"/>',
+  bus:'<rect x="5" y="3.5" width="14" height="14" rx="2.5"/><path d="M5 11h14M8.5 17.5V20M15.5 17.5V20"/><circle cx="8.5" cy="14.3" r=".6"/><circle cx="15.5" cy="14.3" r=".6"/>',
+  ship:'<path d="M3 18c1.5 1.2 3 1.2 4.5 0s3-1.2 4.5 0 3 1.2 4.5 0 3-1.2 4.5 0"/><path d="M5 15.5 4 11h16l-1 4.5M7 11V7h10v4M12 4v3"/>',
+  walk:'<circle cx="13" cy="4.5" r="1.6"/><path d="m9 21 2.5-6.5L14 17v4M10 11l1.5-4 3 1.5 2 3M11.5 7 8 9l-1 3"/>',
+  meal:'<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 21V3c-2 1.5-3 4-3 7h3"/>',
+  bed:'<path d="M3 19V6M21 19v-5a3 3 0 0 0-3-3h-8v6M3 15h18"/><circle cx="6.5" cy="12" r="1.8"/>',
+  pin:'<path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+  flag:'<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+  rest:'<path d="M5 9h11v5a5 5 0 0 1-5 5h-1a5 5 0 0 1-5-5zM16 10h1.5a2.5 2.5 0 0 1 0 5H16M8 3v3M11 3v3"/>',
+  sight:'<path d="M3 20h18M5 20V10l7-5 7 5v10M9.5 20v-5h5v5"/>',
+  phone:'<path d="M5 4h3l1.5 4-2 1.3a10 10 0 0 0 4.2 4.2L13 11.5l4 1.5v3a2 2 0 0 1-2 2A12 12 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+  map:'<path d="m9 4-5 2v14l5-2 6 2 5-2V4l-5 2zM9 4v14M15 6v14"/>',
+  check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  x:'<path d="M6 6l12 12M18 6 6 18"/>',
+  cal:'<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+  info:'<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.8v.4"/>',
+  bag:'<path d="M5 8h14l-1 12H6zM9 8V6a3 3 0 0 1 6 0v2"/>',
+  people:'<circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 5.5a2.8 2.8 0 0 1 0 5.4M18 14a5 5 0 0 1 2.5 5"/>',
+  globe:'<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.5 2.6 3.6 5.4 3.6 8.5s-1.1 5.9-3.6 8.5c-2.5-2.6-3.6-5.4-3.6-8.5s1.1-5.9 3.6-8.5z"/>',
+  search:'<circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/>',
+  chat:'<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/>',
+  star:'<path d="m12 4 2.4 5 5.4.6-4 3.7 1.1 5.4L12 16l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z"/>',
+  link:'<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  lock:'<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/>',
+  user:'<circle cx="12" cy="8.5" r="3.8"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>',
+  refresh:'<path d="M20 11a8 8 0 0 0-14.5-4.5M4 4.5V8h3.5M4 13a8 8 0 0 0 14.5 4.5M20 19.5V16h-3.5"/>',
+  clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>',
+  copy:'<rect x="8.5" y="8.5" width="11" height="11" rx="2"/><path d="M15.5 8.5V6a1.5 1.5 0 0 0-1.5-1.5H6A1.5 1.5 0 0 0 4.5 6v8A1.5 1.5 0 0 0 6 15.5h2.5"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
+  cloud:'<path d="M7 18.5a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.6 1.3A3.4 3.4 0 0 1 17 18.5z"/>',
+  cloudsun:'<path d="M9.5 6.3a3.5 3.5 0 1 1 5 4.9"/><path d="M12 2.5v1.5M19 5l-1 1M21.5 12H20M4.5 6l1 1M4 12h1.5"/><path d="M8 20.5a3.5 3.5 0 0 1-.4-7 4.8 4.8 0 0 1 9.3 1.1 3 3 0 0 1-.4 5.9z"/>',
+  rain:'<path d="M7 15.5a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.6 1.3A3.4 3.4 0 0 1 17 15.5z"/><path d="M9 18l-1 3M13 18l-1 3M17 18l-1 3"/>',
+  storm:'<path d="M7 15a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.6 1.3A3.4 3.4 0 0 1 17 15z"/><path d="M13 14l-2.5 4h3L11 22"/>',
+  fog:'<path d="M7 14a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.6 1.3A3.4 3.4 0 0 1 17 14z"/><path d="M5 18h14M7 21h10"/>',
+  umbrella:'<path d="M3.5 12a8.5 8.5 0 0 1 17 0z"/><path d="M12 12v6.5a2 2 0 0 0 4 0"/>',
+  photo:'<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 16-5-5-8 8"/>',
+  note:'<path d="M5 4h10l4 4v12H5zM15 4v4h4M8 12h8M8 15.5h5"/>'
+};
+const ic=(n,c='i')=>`<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
+
+/* ---------- data（ご旅行案内書より） ---------- */
+const TEL={
+  kinko:'0995-58-2535', kumaso:'050-5487-4047', chiran:'0993-83-3211', aoyagi:'096-353-0311', josaien:'096-288-5577',
+  hotel1:'0570-051-153', hotel2:'096-319-1050'
+};
+const KIND={gather:['集合','flag'],flight:['飛行機','plane'],spot:['見学','sight'],meal:['食事','meal'],hotel:['宿泊','bed'],ferry:['フェリー','ship'],rest:['休憩','rest'],stop:['立ち寄り','pin']};
+const VIA={bus:['バス','bus'],walk:['徒歩','walk'],ferry:['フェリー','ship'],flight:['飛行機','plane']};
+
+const URL={
+  '小松空港':'https:\/\/www.komatsuairport.jp/','羽田空港第1ターミナル':'https:\/\/tokyo-haneda.com/','鹿児島空港':'https:\/\/www.koj-ab.co.jp/',
+  '霧島神宮':'https:\/\/kirishimajingu.or.jp/','桜島港フェリーターミナル':'https:\/\/www.city.kagoshima.lg.jp/sakurajima-ferry/',
+  '知覧特攻平和会館':'https:\/\/www.chiran-tokkou.jp/','仙巌園':'https:\/\/www.senganen.jp/','水前寺成趣園':'https:\/\/www.suizenji.or.jp/',
+  '熊本城':'https:\/\/castle.kumamoto-guide.jp/','桜の馬場 城彩苑':'https:\/\/www.sakuranobaba-johsaien.jp/','熊本空港':'https:\/\/www.kumamoto-airport.co.jp/'
+};
+const DAYS=[
+ {date:'2026-10-08',label:'1日目',wd:'木',title:'小松から鹿児島へ、桜島を渡る',items:[
+  {t:'06:40',e:'07:40',k:'gather',title:'小松空港 集合',sub:'日本航空カウンター前',map:'小松空港',grp:'komatsu'},
+  {t:'07:40',e:'08:50',k:'flight',title:'JAL182　小松 → 羽田',sub:'羽田 08:50着',grp:'komatsu'},
+  {t:'08:30',e:'10:00',k:'gather',title:'羽田空港 集合',sub:'第1ターミナル 南ウイング',map:'羽田空港第1ターミナル',grp:'haneda'},
+  {t:'10:00',e:'11:45',k:'flight',title:'JAL645　羽田 → 鹿児島',sub:'鹿児島空港 11:45着'},
+  {t:'11:45',e:'12:25',k:'stop',title:'鹿児島空港',sub:'到着後、バスに乗車',map:'鹿児島空港'},
+  {via:'bus',t:'12:30',e:'13:30',k:'meal',title:'錦灘酒造 バレルバレープラハ&GEN',sub:'昼食',tel:TEL.kinko,map:'錦灘酒造 バレルバレープラハ'},
+  {via:'bus',t:'14:15',e:'14:55',k:'spot',title:'霧島神宮',sub:'絢爛豪華な社',map:'霧島神宮'},
+  {via:'bus',t:'15:55',e:'16:25',k:'spot',title:'黒酢本舗 桷志田',sub:'壺畑の見学と試飲',map:'黒酢本舗 桷志田'},
+  {via:'bus',t:'17:00',e:'17:30',k:'spot',title:'有村溶岩展望所',sub:'南岳麓の展望所',map:'有村溶岩展望所'},
+  {via:'bus',t:'17:50',e:'18:05',k:'stop',title:'桜島港',map:'桜島港フェリーターミナル'},
+  {t:'18:05',e:'18:20',k:'ferry',title:'桜島フェリー',sub:'鹿児島（桜島桟橋）18:20着'},
+  {via:'bus',t:'18:30',e:'19:00',k:'hotel',title:'ホテルオリエンタルエクスプレス鹿児島天文館',sub:'チェックイン',tel:TEL.hotel1,map:'ホテルオリエンタルエクスプレス鹿児島天文館'},
+  {via:'walk',t:'19:10',k:'meal',title:'正調さつま料理 熊襲亭',sub:'夕食',tel:TEL.kumaso,map:'熊襲亭 天文館'}
+ ]},
+ {date:'2026-10-09',label:'2日目',wd:'金',title:'知覧と仙巌園、熊本へ',items:[
+  {t:'08:30',k:'hotel',title:'ホテル出発',sub:'鹿児島天文館',map:'ホテルオリエンタルエクスプレス鹿児島天文館'},
+  {via:'bus',viaText:'鹿児島IC → 谷山IC',t:'09:25',e:'10:25',k:'spot',title:'知覧武家屋敷',sub:'薩摩の小京都、知覧の庭園',map:'知覧武家屋敷庭園'},
+  {via:'bus',t:'10:30',e:'11:30',k:'spot',title:'知覧特攻平和会館',sub:'特攻隊員の遺品・資料展示',map:'知覧特攻平和会館'},
+  {via:'walk',t:'11:30',e:'12:20',k:'meal',title:'知覧桜見亭',sub:'昼食',tel:TEL.chiran,map:'知覧桜見亭'},
+  {via:'bus',viaText:'谷山IC → 鹿児島北IC',t:'13:20',e:'14:35',k:'spot',title:'仙巌園（尚古集成館）',sub:'桜島を築山に見立てた大名庭園',map:'仙巌園'},
+  {via:'bus',viaText:'薩摩吉田IC から九州道',t:'16:00',e:'16:15',k:'rest',title:'山江SA',sub:'休憩',map:'山江サービスエリア'},
+  {via:'bus',viaText:'御船IC',t:'17:30',e:'18:00',k:'hotel',title:'ダイワロイネットホテル熊本',sub:'チェックイン',tel:TEL.hotel2,map:'ダイワロイネットホテル熊本'},
+  {via:'walk',t:'18:15',k:'meal',title:'郷土料理 青柳',sub:'夕食（熊本郷土料理）',tel:TEL.aoyagi,map:'郷土料理 青柳 熊本'}
+ ]},
+ {date:'2026-10-10',label:'3日目',wd:'土',title:'熊本城をめぐって帰路へ',items:[
+  {t:'08:30',k:'hotel',title:'ホテル出発',sub:'熊本',map:'ダイワロイネットホテル熊本'},
+  {via:'bus',t:'08:45',e:'09:25',k:'spot',title:'水前寺成趣園',sub:'細川家が代々造営した大名庭園',map:'水前寺成趣園'},
+  {via:'bus',t:'09:35',k:'spot',title:'熊本城',sub:'新しくなった熊本城（終了時刻は案内書に記載なし）',map:'熊本城'},
+  {via:'walk',t:'10:40',e:'11:55',k:'meal',title:'桜の馬場 城彩苑',sub:'お買物と昼食（案内書の表記は 10:40〜11:10〜11:55）',tel:TEL.josaien,map:'桜の馬場 城彩苑'},
+  {via:'bus',t:'12:50',e:'14:00',k:'stop',title:'熊本空港',map:'熊本空港'},
+  {t:'14:00',e:'15:35',k:'flight',title:'JAL630　熊本 → 羽田',sub:'羽田 15:35着'},
+  {t:'15:35',e:'16:45',k:'stop',title:'羽田空港',sub:'乗り継ぎ',grp:'komatsu'},
+  {t:'16:45',e:'17:55',k:'flight',title:'JAL189　羽田 → 小松',sub:'小松空港 17:55着',grp:'komatsu'}
+ ]}
+];
+
+let ROSTER=[]; /* 名簿は本人確認のあとにサーバーから受け取る */
+let CONTACTS=[];
+const DEFAULT_PACK=['健康保険証','財布・現金','スマホと充電器','モバイルバッテリー','着替え（2泊分）','洗面用具','常備薬','羽織るもの（朝晩用）','歩きやすい靴','折りたたみ傘','ハンカチ・ティッシュ','エコバッグ','マスク（火山灰対策）','日焼け止め'];
+/* 人によって要るもの：タップで持ち物に足せる候補 */
+const PACK_HINTS=['酔い止め','イヤホン','サングラス','帽子','カメラ','水筒','名刺','虫よけ','絆創膏','おやつ・つまみ'];
+
+/* ---------- storage ---------- */
+const KEY='kk-trip-2026-10-gas';
+let S={mine:[],memos:{},pack:null,packOk:{},start:'komatsu',tab:'plan',day:null,name:'',pass:''};
+try{const v=localStorage.getItem(KEY); if(v) S=Object.assign(S,JSON.parse(v));}catch(e){}
+if(!Array.isArray(S.pack)) S.pack=DEFAULT_PACK.slice();
+delete S.meet;
+if(!Array.isArray(S.mine)) S.mine=[];
+if(!S.view||typeof S.view!=='object') S.view={size:'m',hc:false,calm:false};
+function applyView(){
+  const r=document.documentElement;
+  r.setAttribute('data-size',S.view.size||'m');
+  r.classList.toggle('hc',!!S.view.hc);
+  /* 端末で「視差効果を減らす」がオンなら、設定しなくても動きを減らす */
+  const osCalm=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  r.classList.toggle('calm',!!S.view.calm||osCalm);
+}
+let A11Y_OPEN=false, MEM_OPEN=false;
+document.addEventListener('toggle',e=>{if(e.target.id==='a11y') A11Y_OPEN=e.target.open; if(e.target.id==='memfold') MEM_OPEN=e.target.open;},true);
+const SB=()=>document.documentElement.classList.contains('calm')?'auto':'smooth';
+applyView();
+/* 共有の集合時間。最後に受け取った内容を端末にも控えておき、電波が弱いときはそれを表示する */
+let MEET={}, SYNC={ok:false,at:null,busy:false};
+try{const c=localStorage.getItem(KEY+'-meet'); if(c) MEET=JSON.parse(c)||{};}catch(e){}
+const HAS_RUN=typeof google!=='undefined'&&google.script&&google.script.run;
+const API_URL=(typeof window.TRIP_API_URL==='string'&&/^https:[/][/]script\.google\.com[/]/.test(window.TRIP_API_URL))?window.TRIP_API_URL:'';
+const HAS_GAS=!!(HAS_RUN||API_URL); /* どちらかの方法でサーバーにつながる */
+
+/* 専用リンクの合言葉。一度開けば端末に覚えておく */
+let TOKEN='', META_TOKEN='', APP_URL='';
+(function(){
+  const m=document.querySelector('meta[name="trip-token"]'); const t=m?m.getAttribute('content'):'';
+  const q=(location.search.match(/[?&]m=([A-Za-z0-9]{4,32})/)||[])[1]||'';
+  const got=(t&&t!=='__TRIP_TOKEN__')?t:q;
+  if(got){TOKEN=got;META_TOKEN=got;try{localStorage.setItem(KEY+'-token',got);}catch(e){}}
+  else{try{TOKEN=localStorage.getItem(KEY+'-token')||'';}catch(e){}}
+})();
+/* 入力なしで開けるアドレス（URLに端末用の合言葉を付けたもの） */
+const tokenUrl=()=>APP_URL&&TOKEN?APP_URL+'?m='+encodeURIComponent(TOKEN):'';
+function goTokenUrl(){
+  const u=tokenUrl(); if(!u) return false;
+  /* 枠の外側（画面全体）をそのアドレスに移す。だめなら新しいタブで */
+  try{window.top.location.href=u; return true;}catch(_){}
+  try{const w=window.open(u,'_top'); return !!w;}catch(__){ return false; }
+}
+/* 今のアドレスに合言葉が付いていないとき、上部に案内を出す（ホーム画面から開いたときは特に目立たせる） */
+function tokenBanner(){
+  if(!HAS_RUN||AUTH!=='ok'||!tokenUrl()||META_TOKEN===TOKEN) return '';
+  const sa=document.body.classList.contains('standalone');
+  return `<a class="fixbar${sa?' strong':''}" href="${tokenUrl()}" target="_top">${ic('link')}<span>${sa
+    ?'<b>毎回名前を聞かれないようにする：</b>ここをタップして開き直し、ホーム画面のアイコンを削除してから、その画面でもう一度「ホーム画面に追加」してください'
+    :'<b>次回から入力なしで開くには：</b>ここをタップして開き直してから、ホーム画面に追加してください'}</span></a>`;
+}
+let PIN='', FNAME='';
+try{PIN=localStorage.getItem(KEY+'-pin')||'';FNAME=localStorage.getItem(KEY+'-fname')||'';}catch(e){}
+let AUTH=HAS_GAS?'checking':'ok';
+const api=(fn,arg)=>new Promise((res,rej)=>{
+  const req=Object.assign({},arg||{},{token:TOKEN,pin:PIN,fullName:FNAME});
+  if(HAS_RUN) return google.script.run.withSuccessHandler(res).withFailureHandler(rej)[fn](req);
+  if(!API_URL) return rej(new Error('offline-preview'));
+  /* 外のサイトから：本文を text/plain で送ると、ブラウザの事前確認なしでGASに届く */
+  fetch(API_URL,{method:'POST',body:JSON.stringify(Object.assign({action:fn},req)),headers:{'Content-Type':'text/plain;charset=UTF-8'}})
+    .then(r=>r.json()).then(j=>{ if(j&&j.ok) res(j.result); else rej(new Error((j&&j.error)||'API_ERROR')); })
+    .catch(rej);
+});
+function gotMeet(m){
+  MEET=m||{}; SYNC.ok=true; SYNC.at=Date.now();
+  try{localStorage.setItem(KEY+'-meet',JSON.stringify(MEET));}catch(e){}
+}
+let NOTES=[], WEATHER=null, ALBUM='';
+try{const c=localStorage.getItem(KEY+'-notes'); if(c) NOTES=JSON.parse(c)||[];}catch(e){}
+function gotNotes(list){
+  NOTES=Array.isArray(list)?list:[];
+  try{localStorage.setItem(KEY+'-notes',JSON.stringify(NOTES));}catch(e){}
+}
+/* ---------- トーストと確認ダイアログ（ブラウザ標準のalert/confirmの代わり） ---------- */
+let toastTimer;
+function toast(msg,kind){
+  const el=document.getElementById('toast');
+  el.className=kind==='err'?'err':'';
+  el.innerHTML=(kind==='err'?ic('info'):ic('check'))+'<span>'+esc(msg)+'</span>';
+  requestAnimationFrame(()=>el.classList.add('on'));
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('on'),kind==='err'?3800:2000);
+}
+function ask({title,msg='',ok='OK',cancel='キャンセル',danger=false,input=null}){
+  return new Promise(res=>{
+    const d=document.getElementById('dlg'), i=document.getElementById('dlg-i');
+    document.getElementById('dlg-t').textContent=title;
+    document.getElementById('dlg-m').textContent=msg;
+    const o=document.getElementById('dlg-o'), c=document.getElementById('dlg-c');
+    o.textContent=ok; c.textContent=cancel; o.classList.toggle('danger',danger);
+    if(input){i.style.display='';i.type=input.type||'text';i.value=input.value||'';i.placeholder=input.placeholder||'';}
+    else i.style.display='none';
+    const done=v=>{d.classList.remove('on');o.onclick=c.onclick=d.onclick=i.onkeydown=document.onkeydown=null;res(v);};
+    o.onclick=()=>done(input?i.value.trim():true);
+    c.onclick=()=>done(input?null:false);
+    d.onclick=e=>{if(e.target===d) done(input?null:false);};
+    i.onkeydown=e=>{if(e.key==='Enter') o.click();};
+    document.onkeydown=e=>{if(e.key==='Escape') c.click();};
+    d.classList.add('on');
+    setTimeout(()=>(input?i:o).focus(),30);
+  });
+}
+
+/* 電話：タップしたら番号を大きく表示して、かける／コピーを選べるようにする */
+function openCall(name,num){
+  const d=document.getElementById('calldlg'), tel='tel:'+num.replace(/[^0-9+]/g,'');
+  document.getElementById('call-n').textContent=name||'電話';
+  document.getElementById('call-num').textContent=num;
+  const go=document.getElementById('call-go'); go.href=tel; go.innerHTML=ic('phone')+'電話をかける';
+  const cp=document.getElementById('call-copy'); cp.innerHTML=ic('copy')+'番号をコピー';
+  const close=()=>{d.classList.remove('on');document.onkeydown=null;};
+  go.onclick=e=>{
+    /* GASの枠の中では、まず新しいウィンドウで開き、だめなら外側の画面で開く */
+    e.preventDefault();
+    let w=null; try{w=window.open(tel,'_blank');}catch(_){}
+    if(!w){try{window.top.location.href=tel;}catch(_){location.href=tel;}}
+    setTimeout(close,300);
+  };
+  cp.onclick=async()=>{
+    let ok=false;
+    try{await navigator.clipboard.writeText(num);ok=true;}catch(_){
+      const t=document.createElement('textarea');t.value=num;t.setAttribute('readonly','');t.style.position='fixed';t.style.opacity='0';
+      document.body.appendChild(t);t.select();try{ok=document.execCommand('copy');}catch(__){} t.remove();
+    }
+    toast(ok?'番号をコピーしました':'コピーできませんでした。番号を長押ししてコピーしてください',ok?'':'err');
+  };
+  document.getElementById('call-x').onclick=close;
+  d.onclick=e=>{if(e.target===d) close();};
+  document.onkeydown=e=>{if(e.key==='Escape') close();};
+  d.classList.add('on'); setTimeout(()=>go.focus(),30);
+}
+document.addEventListener('click',e=>{
+  const a=e.target.closest&&e.target.closest('a[href^="tel:"]');
+  if(!a||a.id==='call-go') return;
+  e.preventDefault(); e.stopPropagation();
+  openCall(a.getAttribute('data-name')||'',a.getAttribute('data-num')||a.getAttribute('href').slice(4));
+},true);
+
+/* 名前はログイン中のGoogleアカウントからサーバーが決める */
+let ME={email:'',name:''};
+function gotMe(me){
+  if(!me){ME={email:'',name:''};return;}
+  if(me&&me.email){
+    ME=me; S.name=me.name;
+    const st=me.start==='haneda'?'haneda':'komatsu';
+    if(st!==S.start){S.start=st;save();renderInfo();renderDays();}
+  }
+}
+/* ---------- 本人確認（専用リンク＋共通パスワード） ---------- */
+let gateMode='';
+function gotAuth(r){
+  AUTH=r.auth||'login';
+  const g=document.getElementById('gate'), t=document.getElementById('gate-t'), m=document.getElementById('gate-m'), e=document.getElementById('gate-e');
+  g.classList.remove('checking');
+  document.body.classList.toggle('locked',AUTH!=='ok');
+  if(AUTH==='ok'){g.classList.remove('pin');return;}
+  e.textContent=r.err||'';
+  gateMode=AUTH;
+  /* 覚えていた内容が通らなかったら忘れる（名前は入力欄に残す） */
+  if(AUTH==='login'&&PIN){PIN='';try{localStorage.removeItem(KEY+'-pin');}catch(_){}}
+  const nameEl=document.getElementById('gate-name');
+  if(FNAME&&!nameEl.value) nameEl.value=FNAME;
+  const nopass=r.needPass===false; g.classList.toggle('nopass',nopass);
+  const show=(tt,mm,form)=>{t.textContent=tt;m.textContent=mm;g.classList.toggle('pin',!!form);g.classList.toggle('setup',!!form);
+    if(form)setTimeout(()=>document.getElementById(nameEl.value&&!nopass?'gate-i':'gate-name').focus(),100);};
+  if(AUTH==='login') show('参加者専用のしおりです',nopass?'フルネーム（漢字）を入れてください。':'フルネーム（漢字）と、幹事から伝えられたパスワードを入れてください。',true);
+  else if(AUTH==='locked') show('しばらく開けません','パスワードを何度も間違えたため、ロックしました。幹事に連絡してください。',false);
+  else if(AUTH==='expired') show('公開期間が終わりました','このしおりは旅行が終わったため閉じています。',false);
+  else show('確認できませんでした','時間をおいて開き直してください。',false);
+}
+function submitPin(){
+  const i=document.getElementById('gate-i'), n=document.getElementById('gate-name');
+  const v=(i.value||'').trim(), fam=(n.value||'').trim();
+  const e=document.getElementById('gate-e');
+  const nopass=document.getElementById('gate').classList.contains('nopass');
+  if(!fam){e.textContent='フルネームを漢字で入れてください';n.focus();return;}
+  if(!v&&!nopass){e.textContent='パスワードを入れてください';i.focus();return;}
+  PIN=v; FNAME=fam;
+  try{localStorage.setItem(KEY+'-pin',v);localStorage.setItem(KEY+'-fname',fam);}catch(_){}
+  i.value=''; e.textContent='確認しています…';
+  SYNC.busy=false; pull(true);
+}
+document.getElementById('gate-o').addEventListener('click',submitPin);
+document.getElementById('gate-eye').addEventListener('click',()=>{
+  const i=document.getElementById('gate-i'), b=document.getElementById('gate-eye'), on=i.type==='password';
+  i.type=on?'text':'password'; b.setAttribute('aria-pressed',String(on)); b.setAttribute('aria-label',on?'パスワードを隠す':'パスワードを表示'); i.focus();
+});
+document.getElementById('gate-i').addEventListener('keydown',ev=>{if(ev.key==='Enter')submitPin();});
+document.getElementById('gate-name').addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();if(document.getElementById('gate').classList.contains('nopass'))submitPin();else document.getElementById('gate-i').focus();}});
+document.body.classList.toggle('locked',HAS_GAS&&!window.__PREVIEW);
+/* ホーム画面から開いたか（アプリのような全画面表示）を調べる */
+(function(){
+  let sa=false;
+  try{sa=(window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||window.navigator.standalone===true;}catch(_){}
+  try{if(!sa&&window.top&&window.top.navigator&&window.top.navigator.standalone===true) sa=true;}catch(_){}
+  document.body.classList.toggle('standalone',sa);
+})();
+if(!HAS_GAS||window.__PREVIEW) document.getElementById('gate').classList.remove('checking');
+function ensureName(){
+  if(ME.email) return true;
+  if(!HAS_GAS){ /* プレビュー用 */
+    if(!S.name){const nm=(prompt('お名前（プレビュー用）','')||'').trim(); if(!nm) return false; S.name=nm; save();}
+    return true;
+  }
+  toast('入力するには、幹事から届いた自分専用のリンクから開いてください','err');
+  return false;
+}
+function pull(force){
+  if(SYNC.busy||editMeet||editDelay) return;
+  if(!force&&AUTH==='login') return; /* パスワードの入力中は取りに行かない */
+  SYNC.busy=true;
+  api('getShared').then(r=>{gotAuth(r); if(r.auth!=='ok'){SYNC.busy=false;return;}
+    if(r.appUrl) APP_URL=r.appUrl;
+    if(r.session&&r.session!==TOKEN){TOKEN=r.session;try{localStorage.setItem(KEY+'-token',TOKEN);}catch(_){}
+      /* 名前とパスワードで入った直後：アドレスを「入力なしで開ける形」に切り替える（ホーム画面に追加しても覚えたまま） */
+      if(HAS_RUN&&META_TOKEN!==TOKEN) setTimeout(goTokenUrl,400);
+    } ROSTER=r.members||[]; CONTACTS=r.contacts||[]; renderMember(); renderInfo(); gotMe(r.me);gotMeet(r.meet);gotDelays(r.delays);gotNotes(r.notes);WEATHER=r.weather||null;ALBUM=r.albumUrl||'';renderWeather();if(!isTypingIn('#t-info'))renderInfo();migrateLocal();if(S.tab==='notes'){markNotesSeen();}renderNav();renderHero();if(!isTypingIn('#daybody'))renderDays();if(!isTypingIn('#t-notes,#t-my'))renderNotes();})
+    .catch(()=>{SYNC.ok=false;renderHero();if(AUTH==='checking'){document.getElementById('gate').classList.remove('checking');document.getElementById('gate-t').textContent='つながりません';document.getElementById('gate-m').textContent='電波のよい場所で開き直してください。';}}).finally(()=>{SYNC.busy=false;});
+}
+function migrateLocal(){
+  if(!ME.email||!S.mine||!S.mine.length) return;
+  const list=S.mine.slice(); S.mine=[]; save();
+  list.reduce((p,x)=>p.then(()=>api('addNote',{scene:x.scene,title:x.title,body:x.body||'',url:x.url||'',shared:false}).then(gotNotes)),Promise.resolve())
+    .then(()=>{renderNotes();}).catch(()=>{S.mine=list.concat(S.mine);save();});
+}
+function manualPull(){
+  if(!HAS_GAS){toast('プレビューでは更新できません','err');return;}
+  if(SYNC.busy) return;
+  document.querySelectorAll('.syncbar').forEach(b=>b.classList.add('spin'));
+  const t0=SYNC.at; pull();
+  const wait=setInterval(()=>{if(!SYNC.busy){clearInterval(wait);
+    document.querySelectorAll('.syncbar').forEach(b=>b.classList.remove('spin'));
+    SYNC.at!==t0&&SYNC.ok?toast('最新の内容になりました'):toast('更新できませんでした。電波を確認してください','err');}},150);
+}
+function syncBar(){
+  if(!HAS_GAS) return '';
+  const tm=SYNC.at?fmtClock(new Date(SYNC.at).toISOString()):null;
+  return `<div class="syncbar">${tm?`${SYNC.ok?'':'つながっていません　'}${tm} 時点`:'読み込み中…'}<button data-refresh aria-label="最新の内容に更新">${ic('refresh')}更新</button></div>`;
+}
+function isTypingIn(sel){const a=document.activeElement;return a&&/INPUT|TEXTAREA/.test(a.tagName)&&a.closest(sel);}
+function pushMeet(key,t,p){
+  const it=findItem(key);
+  if(!ensureName()) return Promise.resolve(false);
+  const before=MEET[key];
+  if(t||p) MEET[key]={t,p,by:S.name,at:new Date().toISOString()}; else delete MEET[key];
+  renderHero(); renderDays();
+  const send=()=>api('setMeet',{key,date:DAYS[it.di].date,title:it.title,t,p,pass:S.pass});
+  return send().catch(err=>{
+    if(String(err).includes('PASSCODE')){
+      return ask({title:'編集用のパスコード',msg:'集合時間を入力できる人だけに伝えられているパスコードです。',ok:'保存する',input:{type:'password',placeholder:'パスコード'}})
+        .then(pc=>{ if(!pc) throw new Error('CANCEL'); S.pass=pc; save(); return send(); });
+    }
+    throw err;
+  }).then(m=>{gotMeet(m);renderHero();renderDays();toast(t||p?'集合時間をみんなに共有しました':'集合時間を消しました');return true;})
+    .catch(err=>{
+      if(before) MEET[key]=before; else delete MEET[key];
+      renderHero();renderDays();
+      const s=String(err);
+      if(!s.includes('CANCEL')) toast(s.includes('PASSCODE')?'パスコードが違うため保存できませんでした':'保存できませんでした。電波のよい場所でもう一度お試しください','err');
+      return false;
+    });
+}
+function findItem(key){const [di,ii]=key.split('-').map(Number);return DAYS[di].items[ii];}
+if(S.tab==='pack') S.tab='my';
+if(S.tab==='member') S.tab='info';
+if(!['plan','notes','my','info'].includes(S.tab)) S.tab='plan'; delete S.roll;
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}};
+
+/* ---------- time（日本時間で計算） ---------- */
+const toMin=(d,t)=>{const [y,m,dd]=d.split('-').map(Number),[h,mi]=t.split(':').map(Number);return Date.UTC(y,m-1,dd,h,mi)/60000;};
+let SIM=null; /* 「時刻を指定して確認」で入れた日時（保存しない） */
+function nowMin(){
+  if(SIM!=null) return SIM;
+  const q=new URLSearchParams(location.search).get('t'); /* 動作確認用: ?t=2026-10-08T14:20 */
+  if(q&&/^\d{4}-\d\d-\d\dT\d\d:\d\d$/.test(q)) return toMin(q.slice(0,10),q.slice(11));
+  return Math.floor((Date.now()+9*3600e3)/60000);
+}
+DAYS.forEach((d,di)=>{
+  d.items.forEach((it,ii)=>{it.di=di;it.ii=ii;it.s=toMin(d.date,it.t);});
+  d.items.forEach((it,ii)=>{
+    if(it.e) it.en=toMin(d.date,it.e);
+    else{const nx=d.items[ii+1]; it.en=nx?nx.s:it.s+90; it.noEnd=true;}
+  });
+});
+const isOff=it=>it.grp&&it.grp!==S.start;
+const ALL=()=>DAYS.flatMap(d=>d.items).filter(it=>!isOff(it));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ADDR={'ホテルオリエンタルエクスプレス鹿児島天文館':'鹿児島県鹿児島市山之口町2-1 ホテルオリエンタルエクスプレス鹿児島天文館','ダイワロイネットホテル熊本':'熊本県熊本市中央区花畑町10-22 ダイワロイネットホテル熊本'};
+/* Googleマップで開く（スマホではGoogleマップのアプリが入っていればアプリが開く） */
+const mapUrl=q=>'https:\/\/www.google.com/maps/search/?api=1&query='+encodeURIComponent(ADDR[q]||q);
+const telUrl=t=>'tel:'+t.replace(/-/g,'');
+function dur(m){m=Math.max(0,Math.round(m));const h=Math.floor(m/60),mm=m%60;return h?`${h}時間${mm?mm+'分':''}`:`${mm}分`;}
+
+/* ---------- hero（今の時刻から「いま」と「つぎ」を出す） ---------- */
+const fmtT=m=>{const x=((m%1440)+1440)%1440;return String(Math.floor(x/60)).padStart(2,'0')+':'+String(x%60).padStart(2,'0');};
+function linksHtml(it,withMap=true){
+  if(!it.map&&!it.q) return '';
+  const q=it.q||it.map, off=URL[it.map];
+  return `<div class="links">
+    ${off?`<a class="btn" href="${off}" target="_blank" rel="noopener">${ic('globe')}公式サイト</a>`:''}
+    <a class="btn" href="https:\/\/www.google.com/search?q=${encodeURIComponent(q)}" target="_blank" rel="noopener">${ic('search')}検索結果</a>
+    ${withMap?`<a class="btn" href="${mapUrl(q)}" target="_blank" rel="noopener">${ic('pin')}Googleマップ</a>`:''}
+    ${it.tel?`<a class="btn" href="${telUrl(it.tel)}" data-name="${esc(it.title)}" data-num="${it.tel}">${ic('phone')}電話</a>`:''}
+  </div>`;
+}
+/* 実際の集合時間（現地で言われた時刻）。入っていればそれを出発時刻として扱う */
+const kOf=it=>it.di+'-'+it.ii;
+const meetOf=it=>{const m=MEET[kOf(it)];return m&&(m.t||m.p)?m:null;};
+const meetMin=it=>{const m=meetOf(it);return m&&m.t?toMin(DAYS[it.di].date,m.t):null;};
+const endOf=it=>{const m=meetMin(it);return m!=null&&m>it.s?m:it.en;};
+/* 遅れの反映
+   ・「このあと◯分遅れ」が共有されていたら、その予定から後ろをずらす
+   ・集合時間は「集まる時刻」で出発ではないので、入れても後ろの予定はずらさない
+   ・飛行機は定刻のまま（そこで遅れはリセット） */
+let DELAYS={};
+try{const c=localStorage.getItem(KEY+'-delay'); if(c) DELAYS=JSON.parse(c)||{};}catch(e){}
+function gotDelays(d){DELAYS=d||{};try{localStorage.setItem(KEY+'-delay',JSON.stringify(DELAYS));}catch(e){}}
+function applyShift(){
+  DAYS.forEach((d,di)=>{
+    let sh=0;
+    d.items.forEach((it,ii)=>{
+      if(it.ps==null){it.ps=it.s;it.pen=it.en;}
+      const k=di+'-'+ii;
+      if(it.k==='flight') sh=0;
+      else if(DELAYS[k]) sh=Number(DELAYS[k].min)||0;
+      it.shift=it.k==='flight'?0:sh;
+      it.s=it.ps+it.shift; it.en=it.pen+it.shift;
+    });
+  });
+}
+const tS=it=>fmtT(it.s), tE=it=>it.e?fmtT(it.en):'';
+const planTag=it=>it.shift?`<span class="plantag">予定 ${it.t}</span>`:'';
+let editMeet=null;
+const SCROLL={};
+function status(){
+  applyShift();
+  const n=nowMin(), list=ALL();
+  /* 予定の最中（同時刻に重なる場合は後ろを優先）。集合時間を過ぎても、メモしてあればその時刻まで「いま」のまま */
+  let ci=-1; list.forEach((it,i)=>{if(it.s<=n&&n<endOf(it)) ci=i;});
+  if(ci<0){ /* 集合時間を少し過ぎただけ（30分以内）なら、まだその場所にいる扱い */
+    list.forEach((it,i)=>{const m=meetMin(it); if(m!=null&&n>=m&&n<m+30&&!list.some(x=>x.s>it.s&&x.s<=n)) ci=i;});
+  }
+  const ni=list.findIndex(it=>it.s>n);
+  return {n,list,cur:ci>=0?list[ci]:null,nx:ni>=0?list[ni]:null,ni,
+          prev:[...list].reverse().find(it=>endOf(it)<=n)||null};
+}
+function meetEditor(it,n){
+  const m=MEET[kOf(it)]||{};
+  const base=Math.ceil(n/5)*5;
+  const val=m.t||(it.e||fmtT(base+15));
+  return `<div class="meetform">
+    <label for="mt">集合時間</label>
+    <input type="time" id="mt" value="${val}">
+    <div class="quick">${[10,15,20,30].map(x=>`<button class="btn" data-meetq="${fmtT(base+x)}">${x}分後</button>`).join('')}${it.e?`<button class="btn" data-meetq="${it.e}">予定どおり ${it.e}</button>`:''}</div>
+    <label for="mp">集合場所</label>
+    <input id="mp" value="${esc(m.p||'')}" placeholder="例：第2駐車場のバス、入口の鳥居前">
+    <div class="acts"><button class="btn" data-meetsave="${kOf(it)}" style="border-color:var(--lava);color:var(--lava);font-weight:900">保存</button>
+    ${meetOf(it)?`<button class="btn" data-meetdel="${kOf(it)}">消す</button>`:''}
+    <button class="link" data-meetcancel style="margin-left:auto">やめる</button></div></div>`;
+}
+function meetCard(it,n){
+  const key=kOf(it);
+  if(editMeet===key) return meetEditor(it,n);
+  const m=meetOf(it);
+  if(!m) return `<button class="btn meetadd" data-meetedit="${key}">${ic('flag')}ここの集合時間をメモ</button>`;
+  const mm=meetMin(it);
+  const left=mm!=null?mm-n:null;
+  const cls=left==null?'':left<0?' late':left<=10?' soon':'';
+  return `<div class="meet${cls}">
+    <div class="mh">${ic('flag')}集合<button class="link" data-meetedit="${key}">変更</button></div>
+    ${mm!=null?`<div class="mrow"><span class="mt num">${m.t}</span>
+      <span class="left">${left<0?`<span class="num">${dur(-left)}</span><br>過ぎています`:`あと<br><span class="num">${dur(left)}</span>`}</span></div>`:''}
+    ${m.p?`<div class="place">${esc(m.p)}</div>`:''}
+    ${it.e?`<div class="plan">予定表では ${it.t}〜${it.e}</div>`:''}
+    ${m.by?`<div class="plan">${esc(m.by)}さんが${m.at?fmtClock(m.at)+'に':''}入力　全員の画面に表示されています</div>`:''}
+  </div>`;
+}
+function fmtClock(iso){const d=new Date(new Date(iso).getTime()+9*3600e3);return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0');}
+function syncLine(){
+  if(!HAS_GAS) return '';
+  return SYNC.ok?'':`<div class="simflag" style="color:var(--muted)">共有データを受け取れていません。前回受け取った内容を表示しています。</div>`;
+}
+function tonightLink(di){
+  const k=di===0?'n1':di===1?'n2':null; if(!k) return '';
+  const c=NOTES.filter(x=>x.scene===k).length;
+  return `<button class="tonight" data-tab="notes" data-goscene="${k}">${ic('chat')}きょうのみんなのメモ ${c}件</button>`;
+}
+let editDelay=false;
+function delayTarget(st){ /* 遅れを入れる起点：つぎの予定（飛行機は除く） */
+  const {list,ni}=st; if(ni<0) return null;
+  const t=list.slice(ni).find(it=>it.k!=='flight'&&it.di===list[ni].di);
+  return t||null;
+}
+function delayBlock(st){
+  const {n,list}=st; if(n<list[0].s-60||n>=list[list.length-1].en) return '';
+  const tg=delayTarget(st); if(!tg) return '';
+  const cur=tg.shift||0, k=kOf(tg), rec=DELAYS[k];
+  const who=Object.values(DELAYS).filter(x=>x&&x.by).sort((a,b)=>String(b.at).localeCompare(String(a.at)))[0];
+  if(editDelay) return `<div class="delayform">
+    <div class="dh">${ic('clock')}このあとの予定は何分遅れそう？</div>
+    <div class="chips">${[0,5,10,15,20,30,45,60].map(m=>`<button class="btn" data-delayset="${m}" aria-pressed="${cur===m}">${m?m+'分':'予定どおり'}</button>`).join('')}</div>
+    <div class="note">「${esc(tg.title)}」から後ろの時刻をずらして、全員の画面に表示します。飛行機の時刻は変わりません。</div>
+    <div class="acts"><button class="link" data-delaycancel>閉じる</button></div></div>`;
+  return cur>0
+    ? `<div class="delaybar"><span>${ic('clock')}約${cur}分遅れで進んでいます${rec&&rec.by?`<small>${esc(rec.by)}さん ${rec.at?fmtClock(rec.at):''}</small>`:''}</span><button class="link" data-delayopen>変更</button></div>`
+    : `<div class="delaybar plain"><span>${ic('clock')}予定どおり</span><button class="link" data-delayopen>遅れを共有</button></div>`;
+}
+function pushDelay(min){
+  const st=status(), tg=delayTarget(st); if(!tg) return;
+  if(!ensureName()) return;
+  const key=kOf(tg), before=DELAYS[key];
+  DELAYS[key]={min,by:S.name,at:new Date().toISOString()};
+  editDelay=false; renderHero(); renderDays();
+  const send=()=>api('setDelay',{key,min,title:tg.title,pass:S.pass});
+  send().catch(err=>{
+    if(String(err).includes('PASSCODE'))
+      return ask({title:'編集用のパスコード',msg:'遅れや集合時間を入力できる人だけに伝えられているパスコードです。',ok:'保存する',input:{type:'password',placeholder:'パスコード'}})
+        .then(pc=>{if(!pc) throw new Error('CANCEL'); S.pass=pc; save(); return send();});
+    throw err;
+  }).then(d=>{gotDelays(d);renderHero();renderDays();toast(min?`このあと約${min}分遅れで共有しました`:'予定どおりに戻しました');})
+    .catch(err=>{ if(before) DELAYS[key]=before; else delete DELAYS[key]; renderHero(); renderDays();
+      if(!String(err).includes('CANCEL')) toast(String(err).includes('PASSCODE')?'パスコードが違うため保存できませんでした':'保存できませんでした。電波のよい場所でもう一度お試しください','err'); });
+}
+function goBlock(nx,from,n,lbl,planEnd){
+  const [vl,vi]=nx.via?VIA[nx.via]:(nx.k==='flight'?VIA.flight:nx.k==='ferry'?VIA.ferry:[null,'pin']);
+  const travel=planEnd!=null?nx.ps-planEnd:0;
+  const delay=nx.shift||0, est=nx.s;
+  const how=vl?`${vl}${nx.viaText?'（'+esc(nx.viaText)+'）':''}${travel>0?'で約'+dur(travel):''}`:'';
+  return `<div class="go">
+    <div class="lbl">${ic(vi)}${lbl}${how?'　'+how:''}</div>
+    <div class="dest"><span class="num">${fmtT(est)}</span><b>${esc(nx.title)}</b></div>
+    ${delay?`<div class="where" style="color:var(--sea)">到着見込み（予定表では ${nx.t}、約${Math.abs(delay)}分${delay>0?'遅れ':'早め'}）</div>`:''}
+    <div class="row2"><span class="sub" style="margin-left:0">${nx.sub?esc(nx.sub):''}</span><span class="left">あと <span class="num">${dur(est-n)}</span></span></div>
+    ${linksHtml(nx)}</div>`;
+}
+function laterBlock(st){
+  if(st.ni<0) return '';
+  const rest=st.list.slice(st.ni+1).filter(it=>it.di===st.nx.di).slice(0,3);
+  if(!rest.length) return '';
+  return `<div class="later">${rest.map(it=>`<div><span class="num">${tS(it)}</span><span>${esc(it.title)}</span></div>`).join('')}</div>`;
+}
+const TOPBAR={has:false,heroOut:false};
+function updateTopbar(){
+  const on=TOPBAR.has&&TOPBAR.heroOut&&!document.body.classList.contains('sheetOpen');
+  document.getElementById('topbar').classList.toggle('on',on);
+  document.body.classList.toggle('barOn',on);
+}
+if('IntersectionObserver' in window){
+  new IntersectionObserver(es=>{TOPBAR.heroOut=!es[0].isIntersecting&&es[0].boundingClientRect.top<0;updateTopbar();},{threshold:0}).observe(document.getElementById('hero'));
+}
+function renderHero(){
+  const st=status(), {n,list,cur,nx,prev}=st, first=list[0], last=list[list.length-1];
+  const el=document.getElementById('hero');
+  const sd=new Date(n*60000);
+  const sim=SIM!=null?`<div class="simflag">${sd.getUTCMonth()+1}/${sd.getUTCDate()} ${fmtT(n)} として表示中　<button class="link" data-sim="clear" style="color:inherit">今の時刻に戻す</button></div>`:'';
+  const startTxt=S.start==='haneda'?'羽田空港 第1ターミナル南ウイング':'小松空港 日本航空カウンター前';
+  let h=sim+syncLine()+delayBlock(st), sticky='';
+
+  if(n<first.s){
+    const left=Math.floor(first.s/1440)-Math.floor(n/1440);
+    h+= left>=1
+      ? `${mascotImg('hero-mascot')}<div class="state">出発まで</div><div class="big"><span class="num">${left}</span><span class="unit">日</span></div>
+         <div class="what">10/8（木）${fmtT(first.s).replace(/^0/,'')} 集合</div><div class="where">${startTxt}</div>`
+      : `<div class="state">きょうは出発日です</div>`+goBlock(first,null,n,'最初の行き先');
+    if(left<1) sticky=`<span>つぎ</span><span class="num">${first.t}</span><b>${esc(first.title)}</b><span class="m">あと${dur(first.s-n)}</span>`;
+  }else if(n>=last.en){
+    h+=`${mascotImg('end-mascot')}<div class="state">旅行は終了しました</div><div class="what" style="margin-top:4px">10月10日（土）17:55 小松空港着</div><div class="where">おつかれさまでした</div>`;
+  }else if(cur){
+    const ce=endOf(cur), total=Math.max(1,ce-cur.s), pct=Math.min(100,(n-cur.s)/total*100);
+    const moving=cur.k==='flight'||cur.k==='ferry';
+    const hasMeet=!!meetMin(cur);
+    const verb=moving?'到着まで':(cur.e&&!hasMeet?'出発まで':'');
+    h+=`<div class="state">いま</div>
+        <div class="row2"><div class="what" style="margin-top:2px">${esc(cur.title)}</div>
+        ${verb?`<span class="left">${verb}<br><span class="num">${dur(ce-n)}</span></span>`:''}</div>
+        <div class="where">${tS(cur)}${cur.e?'〜'+tE(cur):'〜'}${cur.shift?'（予定 '+cur.t+(cur.e?'〜'+cur.e:'')+'）':''}${cur.sub?'　'+esc(cur.sub):''}</div>
+        ${(cur.e||hasMeet)&&!(hasMeet&&n>=ce)?`<div class="bar"><i style="width:${pct}%"></i></div>`:''}
+        ${moving?'':meetCard(cur,n)+linksHtml(cur)}`;
+    if(nx&&nx.di===cur.di) h+=goBlock(nx,ce,n,'つぎ',cur.pen)+laterBlock(st);
+    else if(nx) h+=tonightLink(cur.di)+`<div class="go"><div class="lbl">${ic('cal')}きょうの予定はここまで</div>
+        <div class="dest"><span class="num">${nx.t}</span><b>${esc(nx.title)}</b></div><div class="where">${DAYS[nx.di].label}（10/${+DAYS[nx.di].date.slice(8)}）の最初の予定</div></div>`;
+    const cm=meetOf(cur), cmm=meetMin(cur);
+    if(nx&&!(cm&&!moving)) sticky=`<span>${nx.di===cur.di?'つぎ':'あした'}</span><span class="num">${tS(nx)}</span><b>${esc(nx.title)}</b><span class="m">あと${dur(nx.s-n)}</span>`;
+  }else if(nx){
+    if(prev&&prev.di===nx.di){
+      const pe=endOf(prev), pct=Math.min(100,(n-pe)/Math.max(1,nx.s-pe)*100);
+      h+=`<div class="state">いま　移動中</div><div class="where">${esc(prev.title)} を出発</div>`+goBlock(nx,pe,n,'向かっている先',prev.pen)
+        +`<div class="bar"><i style="width:${pct}%"></i></div>`+laterBlock(st);
+    }else{
+      h+=`<div class="state">${DAYS[nx.di].label}（10/${+DAYS[nx.di].date.slice(8)}）</div>`+(prev&&prev.di===nx.di-1?tonightLink(prev.di):'')+goBlock(nx,null,n,'つぎ')+laterBlock(st);
+    }
+    sticky=`<span>つぎ</span><span class="num">${tS(nx)}</span><b>${esc(nx.title)}</b><span class="m">あと${dur(nx.s-n)}</span>`;
+  }
+  const gi=h.indexOf('<div class="go">');
+  if(gi<0) h=`<div class="blk-plain">${h}</div>`;
+  else{
+    const a=h.slice(0,gi), b=h.slice(gi);
+    h=(a.replace(/<div class="simflag"[^>]*>.*?<\/div>/g,'').trim()?`<div class="${cur||(prev&&nx&&prev.di===nx.di)?'blk-now':'blk-plain'}">${a}</div>`:'')+`<div class="blk-next">${b}</div>`;
+  }
+  el.innerHTML=tokenBanner()+h;
+  document.body.classList.toggle('sub',S.tab!=='plan');
+  let bar='';
+  if(cur&&!['flight','ferry'].includes(cur.k)&&meetMin(cur)!=null){
+    const m=meetOf(cur), mm=meetMin(cur);
+    bar=`<span class="lb now">集合</span><span class="num">${m.t}</span><b>${esc(m.p||cur.title)}</b><span class="m now">${mm>=n?'あと'+dur(mm-n):dur(n-mm)+'過ぎ'}</span>`;
+  }else if(sticky){
+    bar=sticky.replace('<span>','<span class="lb next">').replace('class="m"','class="m next"');
+  }
+  const tb=document.getElementById('topbar'); tb.innerHTML=bar; TOPBAR.has=!!bar; updateTopbar();
+}
+
+/* ---------- days ---------- */
+function defaultDay(){
+  const n=nowMin(); const i=DAYS.findIndex(d=>Math.floor(toMin(d.date,'00:00')/1440)===Math.floor(n/1440));
+  return i>=0?i:0;
+}
+let openKey=null;
+function renderDays(){
+  if(S.day==null) S.day=defaultDay();
+  document.getElementById('days').innerHTML=DAYS.map((d,i)=>
+    `<button role="tab" aria-selected="${i===S.day}" data-day="${i}"><b>${d.label}</b><span>10/${+d.date.slice(8)}（${d.wd}）</span></button>`).join('');
+  const d=DAYS[S.day], n=nowMin();
+  const stt=status(), cs=stt.cur, nxs=stt.nx;
+  let h=`<div class="dayhead"><h2>${d.title}</h2></div><ol class="tl">`;
+  d.items.forEach(it=>{
+    const key=it.di+'-'+it.ii, memo=S.memos[key]||'';
+    if(it.via){
+      const [vl,vi]=VIA[it.via];
+      h+=`<li class="via${isOff(it)?' off':''}"><span></span><span class="rail"></span><span class="lbl">${ic(vi)}${vl}${it.viaText?'　'+esc(it.viaText):''}</span></li>`;
+    }
+    const [kl,ki]=KIND[it.k];
+    const st=isOff(it)?' off':(cs===it?' now':(nxs===it?' nexti':(n>=endOf(it)?' done':'')));
+    const mt=meetOf(it);
+    const openNow=openKey===key||editMeet===key;
+    h+=`<li class="it${st}${openNow?' open':''}" data-key="${key}">
+      <div class="time num"><span class="s"${it.shift?' style="color:var(--lava)"':''}>${tS(it)}</span>${it.e?`<span class="e">${tE(it)}</span>`:''}${planTag(it)}</div>
+      <div class="node"><i></i></div>
+      <div class="body">
+        <button class="card" data-toggle="${key}" aria-expanded="${openNow}">
+          <span class="kind">${ic(ki)}${kl}${st===' now'?'<span class="nowtag">いまここ</span>':''}${st===' nexti'?'<span class="nowtag" style="color:var(--sea)">つぎ</span>':''}${isOff(it)?'<span class="nowtag" style="color:var(--muted)">別の集合ルート</span>':''}</span>
+          <span class="ttl" style="display:block">${esc(it.title)}</span>
+          ${it.sub?`<span class="sub" style="display:block">${esc(it.sub)}</span>`:''}
+          ${mt?`<span class="meetline">${ic('flag')}集合 ${mt.t||''}${mt.p?'　'+esc(mt.p):''}</span>`:''}
+          ${memo?`<span class="hasmemo">${ic('note')}${esc(memo.split('\n')[0].slice(0,24))}</span>`:''}
+        </button>
+        <div class="detail">
+          <div style="margin:2px 0 10px">${linksHtml(it)}</div>
+          ${['flight','ferry'].includes(it.k)||cs===it?'':`<div class="dlab">集合時間（みんなに共有されます）</div>${meetCard(it,n)}`}
+          <div class="dlab" style="margin-top:12px">自分だけのメモ（この端末に保存）</div>
+          <textarea data-memo="${key}" placeholder="例：集合場所の目印、ここで買いたいもの">${esc(memo)}</textarea>
+          <div class="saved" data-saved="${key}"></div>
+        </div>
+      </div></li>`;
+  });
+  h+='</ol>'+albumBar();
+  document.getElementById('daybody').innerHTML=h;
+}
+
+/* ---------- info ---------- */
+function renderInfo(){
+  const flights=[['JAL182','小松 → 羽田','10/8','07:40','08:50','komatsu'],['JAL645','羽田 → 鹿児島','10/8','10:00','11:45'],
+                 ['JAL630','熊本 → 羽田','10/10','14:00','15:35'],['JAL189','羽田 → 小松','10/10','16:45','17:55','komatsu']];
+  const meals=[['10/8 昼','錦灘酒造 バレルバレープラハ&GEN',TEL.kinko,'錦灘酒造 バレルバレープラハ'],['10/8 夜','正調さつま料理 熊襲亭',TEL.kumaso,'熊襲亭 天文館'],
+               ['10/9 昼','知覧桜見亭',TEL.chiran,'知覧桜見亭'],['10/9 夜','郷土料理 青柳',TEL.aoyagi,'郷土料理 青柳 熊本'],['10/10 昼','桜の馬場 城彩苑',TEL.josaien,'桜の馬場 城彩苑']];
+  const row=(t,d,tel,map,when)=>`<div class="row">${when?`<div class="when">${when}</div>`:''}<div class="main"><div class="t">${t}</div>${d?`<div class="d">${d}</div>`:''}</div>
+     ${map?`<a class="ic" href="${mapUrl(map)}" target="_blank" rel="noopener" aria-label="Googleマップで開く">${ic('pin')}</a>`:''}
+     ${tel?`<a class="ic" href="${telUrl(tel)}" data-name="${esc(t.replace(/<[^>]+>/g,''))}" data-num="${tel}" aria-label="電話 ${tel}">${ic('phone')}</a>`:''}</div>`;
+  document.getElementById('t-info').innerHTML=`
+  ${HAS_GAS&&!window.__PREVIEW?'':`<div class="blk"><h3>時刻を指定して表示を確認（プレビュー用）</h3>
+    <div class="sim"><input type="datetime-local" id="simin" min="2026-10-08T05:00" max="2026-10-10T19:00" value="${SIM!=null?new Date(SIM*60000).toISOString().slice(0,16):'2026-10-08T14:30'}">
+    <button class="btn" data-sim="set">この時刻で見る</button>${SIM!=null?'<button class="btn" data-sim="clear">今の時刻に戻す</button>':''}</div>
+    <div class="note">旅行前に、当日どう表示されるかを試せます。開き直すと今の時刻に戻ります。本番のアプリにはこの欄はありません。</div>
+  </div>`}
+  ${ALBUM?`<div class="blk"><h3>写真</h3>
+    <a class="btn album" href="${esc(ALBUM)}" target="_blank" rel="noopener">${ic('photo')}共有アルバムを開く</a>
+    <div class="note">撮った写真はここに追加してください。</div></div>`:''}
+  <div class="blk"><h3>連絡先</h3><div class="rows">
+    ${CONTACTS.map(c=>row(c.label,c.tel+(c.note?'　'+c.note:''),c.tel)).join('')||'<div class="loading-s">読み込み中…</div>'}
+  </div></div>
+  <div class="blk"><h3>フライト</h3><div class="rows">
+    ${flights.map(f=>`<div class="row flight"${f[5]&&f[5]!==S.start?' style="opacity:var(--dim)"':''}><span class="no num">${f[0]}</span><span class="route">${f[1]}<br><span class="d" style="color:var(--muted)">${f[2]}</span></span><span class="tm num">${f[3]}<br><span style="font-size:14px;color:var(--muted)">${f[4]}着</span></span></div>`).join('')}
+  </div></div>
+  <div class="blk"><h3>宿泊</h3><div class="rows">
+    ${row('ホテルオリエンタルエクスプレス鹿児島天文館','鹿児島市山之口町2-1',TEL.hotel1,'ホテルオリエンタルエクスプレス鹿児島天文館','1泊目<br>10/8')}
+    ${row('ダイワロイネットホテル熊本','熊本市中央区花畑町10-22',TEL.hotel2,'ダイワロイネットホテル熊本','2泊目<br>10/9')}
+  </div></div>
+  <div class="blk"><h3>食事</h3><div class="rows">
+    ${meals.map(m=>row(m[1],m[2],m[2],m[3],m[0].replace(' ','<br>'))).join('')}
+  </div></div>
+  <div id="info-member"></div>`;
+  renderMember();
+}
+
+/* ---------- packing ---------- */
+function renderPack(){
+  const ok=S.pack.filter(p=>S.packOk[p]).length;
+  const el=document.getElementById('packbox'); if(!el) return;
+  el.innerHTML=`
+  <div>
+    <div class="counter"><span class="num">${ok}<small> / ${S.pack.length}</small></span><button class="link" data-packreset>チェックを外す</button></div>
+    <div class="rows">${S.pack.map((p,i)=>`<div class="chk${S.packOk[p]?' ok':''}">
+      <button class="box" data-pack="${i}" aria-label="${esc(p)}">${ic('check')}</button>
+      <span class="lab" data-pack="${i}">${esc(p)}</span>
+      <button class="x" data-packdel="${i}" aria-label="削除">${ic('x')}</button></div>`).join('')||'<div class="row"><div class="d">下の欄から持ち物を追加できます</div></div>'}</div>
+    <form class="add" id="addform" onsubmit="return false"><input id="addin" placeholder="持ち物を追加" enterkeyhint="done"><button class="btn" type="submit">追加</button></form>
+    ${PACK_HINTS.filter(x=>!S.pack.includes(x)).length?`<div class="hints"><span class="hl">人によって：</span>${PACK_HINTS.filter(x=>!S.pack.includes(x)).map(x=>`<button class="hint" data-packadd="${esc(x)}">${ic('plus')}${esc(x)}</button>`).join('')}</div>`:''}
+  </div>`;
+}
+
+/* ---------- メンバー（見るだけ） ---------- */
+let mq='';
+const norm=s=>s.replace(/[\s　]/g,'');
+function memberRows(){
+  const q=norm(mq);
+  const list=ROSTER.map((r,i)=>[r,i]).filter(([r])=>!q||norm(r[0]).includes(q)||norm(r[1]).includes(q));
+  if(!ROSTER.length) return '<div class="loading-s">読み込み中…</div>';
+  return list.length?list.map(([r,i])=>`<div class="mem"><span class="no num">${i+1}</span><span class="nm">${r[0]}<span class="kana">${r[1]}</span></span></div>`).join('')
+    :'<div class="row"><div class="d">見つかりませんでした</div></div>';
+}
+function renderMember(){
+  const el=document.getElementById('info-member'); if(!el) return;
+  const q0=(document.getElementById('memq')||{}).value||'';
+  el.innerHTML=`<details class="blk a11y memfold" id="memfold"${MEM_OPEN?' open':''}><summary>${ic('people')}メンバー<span class="sumv"><span class="num">${ROSTER.length||''}</span>${ROSTER.length?' 名':''}</span></summary>
+    <div class="note" style="margin:0 0 8px">敬称略・順不同</div>
+    <input class="search" id="memq" placeholder="名前・フリガナで探す" style="margin-bottom:8px" value="${esc(q0)}">
+    <div class="rows" id="memlist">${memberRows()}</div></details>`;
+}
+
+/* ---------- みんなのメモ（行きたいところを全員で共有） ---------- */
+const SCENES=[['n1','1日目（鹿児島）'],['n2','2日目（知覧・鹿児島・熊本）'],['d3','3日目（熊本）'],['etc','その他']];
+const sceneName=k=>(SCENES.find(s=>s[0]===k)||SCENES[3])[1];
+const KINDS={shop:{label:'行きたいお店',short:'お店',want:'行きたい'},gift:{label:'買いたいお土産',short:'お土産',want:'買いたい'},etc:{label:'その他',short:'その他',want:'気になる'}};
+const kindOf=x=>KINDS[x.kind]?x.kind:'shop';
+let noteKind='all';
+let noteScene='all', noteForm=null; /* noteForm: null | {id?:string} */
+function defaultScene(){
+  const n=nowMin(), d=Math.floor(n/1440)-Math.floor(toMin('2026-10-08','00:00')/1440);
+  return d<=0?'n1':d===1?'n2':'d3';
+}
+function noteFormHtml(){
+  const ed=noteForm.id?NOTES.find(x=>x.id===noteForm.id)||{}:{};
+  if(noteForm.shared==null) noteForm.shared=noteForm.id?ed.shared!==false:true;
+  if(!noteForm.kind) noteForm.kind=noteForm.id?kindOf(ed):(noteKind!=='all'?noteKind:'shop');
+  const kd=KINDS[noteForm.kind];
+  const sc=ed.scene||(noteScene!=='all'?noteScene:defaultScene());
+  return `<div class="note-form">
+    <label>みんなに共有</label>
+    <div class="vis"><button data-vis="1" aria-pressed="${noteForm.shared}">共有する</button><button data-vis="0" aria-pressed="${!noteForm.shared}">共有しない（自分だけ）</button></div>
+    ${noteForm.id&&ed.shared!==false&&(ed.wants||[]).length?'<div class="note" style="margin-top:6px">「共有しない」にすると、ボタンを押してくれた人の画面からも見えなくなります。</div>':''}
+    <label>種類</label>
+    <div class="vis kinds">${Object.entries(KINDS).map(([k,v])=>`<button data-kind="${k}" aria-pressed="${noteForm.kind===k}">${v.short}</button>`).join('')}</div>
+    <label for="nf-scene">いつ・どこで</label>
+    <select id="nf-scene">${SCENES.map(([k,l])=>`<option value="${k}"${k===sc?' selected':''}>${l}</option>`).join('')}</select>
+    <label for="nf-title">${noteForm.kind==='gift'?'お土産・お店':noteForm.kind==='shop'?'場所・お店':'タイトル'}</label>
+    <input id="nf-title" value="${esc(ed.title||'')}" placeholder="${noteForm.kind==='gift'?'例：かるかん、からし蓮根、くまモングッズ':noteForm.kind==='shop'?'例：天文館の○○（焼酎バー）':'例：両替しておく、写真を撮りたい場所'}" maxlength="60">
+    <label for="nf-body">ひとこと</label>
+    <textarea id="nf-body" placeholder="${noteForm.kind==='gift'?'例：城彩苑で買える。会社用に2箱':noteForm.kind==='shop'?'例：黒豚しゃぶが有名。夕食のあと21時ごろから行きたい':'自由にメモ'}" maxlength="300">${esc(ed.body||'')}</textarea>
+    <label for="nf-url">リンク（任意）</label>
+    <input id="nf-url" value="${esc(ed.url||'')}" placeholder="お店のページや地図のURL" inputmode="url">
+    <div class="acts"><button class="btn" data-note="save" style="border-color:var(--sea);color:var(--sea)">${noteForm.id?'更新する':noteForm.shared?'みんなに共有':'自分だけに保存'}</button>
+    <button class="link" data-note="cancel" style="margin-left:auto">やめる</button></div>
+  </div>`;
+}
+function noteCard(x){
+  const priv=x.shared===false;
+  const wants=(x.wants||[]), mine=S.name&&wants.includes(S.name), own=!!x.mine;
+  const kd=KINDS[kindOf(x)];
+  const area=x.scene==='n1'?'鹿児島':x.scene==='n2'?'鹿児島 熊本':x.scene==='d3'?'熊本':'';
+  const q=x.title+' '+(kindOf(x)==='gift'?'お土産 '+(area||'鹿児島 熊本'):area);
+  const safeUrl=/^https?:[/][/]/.test(x.url||'')?x.url:'';
+  return `<div class="note-card${priv?' private':''}">
+    <div class="sc">${priv?ic('lock')+'自分だけ　':''}${kd.label}　${esc(sceneName(x.scene).replace(/（.*）/,''))}</div>
+    <div class="nt">${esc(x.title)}</div>
+    ${x.body?`<div class="nb">${esc(x.body)}</div>`:''}
+    ${priv?'':`<div class="who">${esc(x.by||'')}さん${x.at?'　'+esc(fmtNoteDate(x.at)):''}</div>`}
+    ${!priv&&wants.length?`<div class="wants">${kd.want} ${wants.length}人：${wants.map(esc).join('、')}</div>`:''}
+    <div class="links">
+      ${priv?'':`<button class="btn want" data-want="${esc(x.id)}" aria-pressed="${!!mine}">${ic('star')}${kd.want}</button>`}
+      <a class="btn" href="${mapUrl(q)}" target="_blank" rel="noopener">${ic('pin')}Googleマップ</a>
+      <a class="btn" href="https:${'/'+'/'}www.google.com/search?q=${encodeURIComponent(q)}" target="_blank" rel="noopener">${ic('search')}検索</a>
+      ${safeUrl?`<a class="btn" href="${esc(safeUrl)}" target="_blank" rel="noopener">${ic('link')}リンク</a>`:''}
+      ${own?`<button class="btn" data-note="edit" data-id="${esc(x.id)}">編集</button><button class="btn" data-note="del" data-id="${esc(x.id)}">消す</button>`:''}
+    </div></div>`;
+}
+function planMemos(){
+  const out=[];
+  DAYS.forEach(d=>d.items.forEach(it=>{const m=S.memos[kOf(it)]; if(m) out.push(`<div class="planmemo">
+    <div class="sc">${d.label}　${it.t}</div><div class="nt">${esc(it.title)}</div><div class="nb">${esc(m)}</div></div>`);}));
+  return out.join('');
+}
+function fmtNoteDate(iso){const d=new Date(new Date(iso).getTime()+9*3600e3);if(isNaN(d))return '';return `${d.getUTCMonth()+1}/${d.getUTCDate()} ${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`;}
+/* 入力中かどうか（開いたときの内容と比べる） */
+const NF_IDS=['nf-scene','nf-title','nf-body','nf-url'];
+function noteSnap(){
+  if(!noteForm||!document.getElementById('nf-title')) return null;
+  return JSON.stringify([noteForm.shared,noteForm.kind,...NF_IDS.map(id=>document.getElementById(id).value)]);
+}
+let meetInit=null;
+function meetSnap(){const t=document.getElementById('mt'),p=document.getElementById('mp');return t&&p?t.value+'|'+p.value:null;}
+function isDirty(){
+  const ns=noteSnap(); if(noteForm&&ns!=null&&noteForm.init!=null&&ns!==noteForm.init) return true;
+  if(editMeet){const ms=meetSnap(); if(ms!=null&&meetInit!=null&&ms!==meetInit) return true;}
+  return false;
+}
+async function confirmDiscard(){
+  if(isDirty()&&!(await ask({title:'入力中の内容を破棄しますか？',msg:'まだ保存されていません。破棄すると、入力した内容は消えます。',ok:'破棄する',cancel:'入力に戻る',danger:true}))) return false;
+  noteForm=null; editMeet=null; meetInit=null;
+  return true;
+}
+window.addEventListener('beforeunload',e=>{if(isDirty()){e.preventDefault();e.returnValue='';}});
+const circ=n=>`<span class="cnt${n?'':' zero'}" aria-label="${n}件">${n}</span>`;
+function renderSheet(){
+  const sh=document.getElementById('sheet');
+  if(!noteForm){sh.classList.remove('on');document.body.classList.remove('sheetOpen');updateTopbar();return;}
+  document.getElementById('sheet-t').textContent=noteForm.id?'メモを編集':'メモを書く';
+  document.getElementById('sheet-b').innerHTML=noteFormHtml();
+  sh.classList.add('on'); document.body.classList.add('sheetOpen'); updateTopbar();
+  if(noteForm.init==null) noteForm.init=noteSnap();
+}
+function renderNotes(){
+  const el=document.getElementById('t-notes'); if(!el) return;
+  const cnt=k=>NOTES.filter(x=>x.scene===k).length;
+  const sortN=(a,b)=>(a.shared===false)-(b.shared===false)||sortS(a,b);
+  let body='';
+  {
+    const pick=x=>(noteScene==='all'||x.scene===noteScene)&&(noteKind==='all'||kindOf(x)===noteKind);
+    const ls=NOTES.filter(pick).sort(sortN);
+    if(noteScene==='all'){
+      /* すべて：1日目 → 2日目 → 3日目 → その他 の順に、日ごとの見出しを付けて並べる */
+      body=SCENES.map(([k,l])=>{const g=ls.filter(x=>(SCENES.some(s=>s[0]===x.scene)?x.scene:'etc')===k);
+        return g.length?`<div class="scenehead">${esc(l)}<span class="num">${g.length}</span></div>`+g.map(noteCard).join(''):'';}).join('');
+    }else body=ls.map(noteCard).join('');
+    if(!body&&HAS_GAS&&!SYNC.at) body=`<div class="loading">読み込み中…</div>`;
+    else if(!body) body=`<div class="empty">${mascotImg('empty-mascot')}まだメモはありません。<br>行きたいお店や買いたいお土産を<br>書いてみましょう。</div>`;
+  }
+  el.innerHTML=`<div class="blk" style="margin-top:8px">
+    ${syncBar()}
+    <div class="sgrid" role="group" aria-label="いつ・どこで">
+      <button data-scene="all" aria-pressed="${noteScene==='all'}"><b>すべて</b><span class="num">${NOTES.length}</span></button>
+      ${[['n1','1日目'],['n2','2日目'],['d3','3日目'],['etc','その他']].map(([k,l])=>`<button data-scene="${k}" aria-pressed="${noteScene===k}"${cnt(k)?'':' class="z"'}><b>${l}</b><span class="num">${cnt(k)}</span></button>`).join('')}
+    </div>
+    <div class="kindbar"><button data-nkind="all" aria-pressed="${noteKind==='all'}">すべて</button>${Object.entries(KINDS).map(([k,v])=>`<button data-nkind="${k}" aria-pressed="${noteKind===k}">${v.short}</button>`).join('')}</div>
+    <button class="btn write" data-note="new">${ic('chat')}メモを書く</button>
+    ${body}
+    <div class="note">「共有する」は参加者全員に、「共有しない」は自分だけに表示されます。</div>
+  </div>`;
+  renderMy();
+}
+const sortS=(a,b)=>(Date.parse(b.at)||0)-(Date.parse(a.at)||0);
+const sortM=(a,b)=>String(b.at).localeCompare(String(a.at));
+
+/* ---------- 天気（鹿児島・熊本の3日分） ---------- */
+function wx(code){
+  if(code===0) return ['快晴','sun']; if(code<=2) return ['晴れ','cloudsun']; if(code===3) return ['くもり','cloud'];
+  if(code<=48) return ['霧','fog']; if(code<=67||(code>=80&&code<=82)) return ['雨','rain']; if(code<=77) return ['雪','rain']; return ['雷雨','storm'];
+}
+function renderWeather(){
+  const el=document.getElementById('weather'); if(!el) return;
+  if(!WEATHER||!WEATHER.kagoshima){el.innerHTML='';return;}
+  const cols=[['2026-10-08','鹿児島','kagoshima'],['2026-10-09','熊本','kumamoto'],['2026-10-10','熊本','kumamoto']];
+  const today=fmtDateKey(nowMin());
+  el.innerHTML=`<div class="wxcard">${cols.map(([d,city,key])=>{
+    const w=(WEATHER[key]||[]).find(x=>x.date===d); if(!w) return '';
+    const [lab,icn]=wx(w.code); const dd=+d.slice(8), wd=['木','金','土'][dd-8]||'';
+    return `<div class="wxcol${d===today?' today':''}" title="${lab}" aria-label="10/${dd} ${city} ${lab} 最高${w.max}度 最低${w.min}度 降水確率${w.rain==null?'不明':w.rain+'%'}">
+      <div class="wxd">10/${dd}<span>${city}</span></div>
+      <div class="wxm">${ic(icn,'i wxi')}<span class="num wxt"><b>${w.max}</b>/${w.min}°</span><span class="wxr">${ic('umbrella')}${w.rain==null?'-':w.rain}%</span></div></div>`;}).join('')}</div>`;
+}
+function albumBar(){
+  if(!ALBUM) return '';
+  return `<a class="albumbar" href="${esc(ALBUM)}" target="_blank" rel="noopener">${ic('photo')}<b>共有アルバム</b><span>写真はここに追加</span>${ic('link')}</a>`;
+}
+function fmtDateKey(m){const d=new Date(m*60000);return d.toISOString().slice(0,10);}
+
+/* ---------- マイページ ---------- */
+const MY_SETTINGS=()=>`  <div class="blk"><h3>あなたの集合場所</h3>
+    <div class="rows"><div class="row"><div class="ic" style="border:0">${ic('flag')}</div>
+      <div class="main"><div class="t" style="font-size:17px">${S.start==='haneda'?'羽田空港 第1ターミナル南ウイング':'小松空港 日本航空カウンター前'}</div>
+      <div class="d"><span class="num" style="font-size:16px;color:var(--ink)">${S.start==='haneda'?'8:30':'6:40'}</span> 集合　${S.start==='haneda'?'10:00発 JAL645':'7:40発 JAL182'}</div></div></div></div>
+    <div class="note">${ME.email?'違っている場合は幹事に連絡してください。':'プレビューのため小松空港集合として表示しています。'}</div>
+  </div>
+  <div class="blk"><h3>この端末のデータ</h3><div class="rows">
+    <div class="row"><div class="main"><div class="t">予定ごとのメモ</div><div class="d">${Object.keys(S.memos).length}件</div></div><button class="btn" data-clear="memos">すべて消す</button></div>
+  </div><div class="note">日程のメモと持ち物は、この端末にだけ保存されます。</div></div>
+`;
+function renderMy(){
+  const el=document.getElementById('t-my'); if(!el) return;
+  const priv=NOTES.filter(x=>x.mine&&x.shared===false).sort(sortM);
+  const wanted=NOTES.filter(x=>x.shared!==false&&S.name&&(x.wants||[]).includes(S.name)).sort(sortS);
+  const posted=NOTES.filter(x=>x.mine&&x.shared!==false).sort(sortS);
+  const pm=planMemos();
+  el.innerHTML=`<div class="blk" style="margin-top:12px">
+    <div class="rows"><div class="row"><div class="ic" style="border:0">${ic('user')}</div>
+      <div class="main"><div class="t" style="font-size:18px">${ME.email?esc(ME.name)+' さん':(HAS_GAS&&!SYNC.at?'読み込み中…':'見るだけモード')}</div>
+      <div class="d">${ME.email?(S.start==='haneda'?'羽田集合':'小松集合'):'日程や情報は見られます'}</div></div></div></div>
+    ${ME.email&&tokenUrl()&&META_TOKEN!==TOKEN?`<button class="btn" data-gotoken style="width:100%;justify-content:center;margin-top:8px;border-color:var(--sea);color:var(--sea)">${ic('link')}入力なしで開けるアドレスに切り替える</button>
+    <div class="note">切り替えたあとにホーム画面に追加すると、次回からパスワードを聞かれません。</div>`:''}
+    ${ME.email&&META_TOKEN&&META_TOKEN===TOKEN?`<div class="note">${ic('check')} このアドレスは入力なしで開けます。このままホーム画面に追加できます。</div>`:''}
+
+  </div>
+  <details class="blk a11y" id="a11y"${A11Y_OPEN?' open':''}><summary>${ic('eye')}見やすさの設定<span class="sumv">${({m:'標準',l:'大きい',xl:'とても大きい'})[S.view.size||'m']}${S.view.hc?'・くっきり':''}${S.view.calm?'・動き少なめ':''}</span></summary>
+    <div class="t" style="font-weight:900;font-size:15px" id="sz-l">文字の大きさ</div>
+    <div class="opt" role="group" aria-labelledby="sz-l">
+      ${[['m','標準','s1'],['l','大きい','s2'],['xl','とても大きい','s3']].map(([k,l,c])=>`<button class="${c}" data-view-size="${k}" aria-pressed="${(S.view.size||'m')===k}">${l}</button>`).join('')}
+    </div>
+    <div class="rows" style="margin-top:12px">
+      <button class="sw" role="switch" data-view-toggle="hc" aria-checked="${!!S.view.hc}">
+        <div class="main"><div class="t">くっきり表示</div><div class="d">薄い文字や線を濃くして、屋外でも読みやすくします</div></div><span class="tg" aria-hidden="true"></span></button>
+      <button class="sw" role="switch" data-view-toggle="calm" aria-checked="${!!S.view.calm}">
+        <div class="main"><div class="t">動きを減らす</div><div class="d">画面の切り替えやスクロールのアニメーションを止めます</div></div><span class="tg" aria-hidden="true"></span></button>
+    </div>
+    <div class="note">この端末だけの設定です。iPhoneの「設定 → アクセシビリティ」で動きを減らしている場合は、自動で動きを止めます。</div>
+  </details>
+  <button class="btn write" data-note="new" data-shared="0">${ic('chat')}メモを書く</button>
+  <div class="blk"><h3>自分だけのメモ</h3>
+    ${priv.map(noteCard).join('')||'<div class="empty" style="padding:4px 4px 0;text-align:left">「共有しない」にして書いたメモがここに並びます。</div>'}
+  </div>
+  ${wanted.length?`<div class="blk"><h3>「行きたい」「買いたい」を押したメモ</h3>${wanted.map(noteCard).join('')}</div>`:''}
+  ${posted.length?`<div class="blk"><h3>自分がみんなに共有したメモ</h3>${posted.map(noteCard).join('')}</div>`:''}
+  ${pm?`<div class="blk"><h3>日程に書いたメモ</h3>${pm}</div>`:''}
+  <div class="blk"><h3>持ち物</h3><div id="packbox"></div></div>
+  ${MY_SETTINGS()}`;
+  renderPack();
+}
+function noteApi(fn,arg,optimistic,okMsg){
+  const before=JSON.parse(JSON.stringify(NOTES));
+  if(optimistic){optimistic();renderNotes();renderHero();}
+  return api(fn,arg).then(r=>{gotNotes(r);renderNotes();renderHero();if(okMsg)toast(okMsg);return true;})
+    .catch(()=>{NOTES=before;renderNotes();renderHero();toast('保存できませんでした。電波のよい場所でもう一度お試しください','err');return false;});
+}
+
+/* ---------- nav ---------- */
+const TABS=[['plan','日程','cal'],['notes','みんなのメモ','chat'],['my','マイページ','user'],['info','情報','info']];
+/* 新着＝まだ「みんなのメモ」で見ていない、他の人の共有メモ（時刻ではなくメモのIDで覚える） */
+function newNotes(){
+  const seen=new Set(S.seenIds||[]);
+  return NOTES.filter(x=>x.shared!==false&&!x.mine&&!seen.has(x.id)).length;
+}
+function markNotesSeen(){
+  S.seenIds=NOTES.filter(x=>x.shared!==false).map(x=>x.id).slice(-500);
+  delete S.seen; save();
+}
+function renderNav(){
+  const nn=S.tab==='notes'?0:newNotes();
+  document.getElementById('nav').innerHTML=TABS.map(([k,l,i])=>`<button data-tab="${k}" ${S.tab===k?'aria-current="page"':''}${k==='notes'&&nn?` aria-label="${l}（新着${nn}件）"`:''}>${ic(i)}${l}${k==='notes'&&nn?'<span class="dot"></span>':''}</button>`).join('');
+  TABS.forEach(([k])=>document.getElementById('t-'+k).classList.toggle('on',S.tab===k));
+}
+function renderAll(){
+  [renderNav,renderHero,renderWeather,renderDays,renderInfo,renderNotes].forEach(f=>{
+    try{f();}catch(err){console.error(err);window.__showErr&&window.__showErr(f.name+': '+(err&&err.message||err));}
+  });
+}
+
+/* ---------- events ---------- */
+document.addEventListener('click',async e=>{
+  const t=e.target.closest('[data-refresh],[data-tab],[data-day],[data-toggle],[data-start],[data-pack],[data-packdel],[data-packreset],[data-sim],[data-clear],[data-gotoken],[data-packadd],[data-view-size],[data-view-toggle],[data-delayopen],[data-delayset],[data-delaycancel],[data-scene],[data-note],[data-want],[data-vis],[data-kind],[data-nkind],[data-vis],[data-meetedit],[data-meetq],[data-meetsave],[data-meetdel],[data-meetcancel]');
+  if(!t) return;
+  const ds=t.dataset;
+  if(ds.tab){if(ds.tab!==S.tab&&editMeet){if(!(await confirmDiscard()))return;renderSheet();renderNotes();}
+    if(ds.goscene)noteScene=ds.goscene;
+    if(ds.tab===S.tab){window.scrollTo({top:0,behavior:SB()});return;} /* 今のタブをもう一度押すと先頭へ */
+    SCROLL[S.tab]=window.scrollY;
+    if(ds.tab==='notes'){markNotesSeen();renderNotes();}
+    S.tab=ds.tab;save();renderNav();renderHero();
+    if(ds.goscene) window.scrollTo(0,0);
+    else if(SCROLL[ds.tab]!=null) window.scrollTo(0,SCROLL[ds.tab]);
+    else{window.scrollTo(0,0);if(ds.tab==='plan')scrollToNow();}
+  }
+  else if('refresh' in ds){manualPull();}
+  else if(ds.day){S.day=+ds.day;openKey=null;save();renderDays();}
+  else if(ds.toggle){openKey=openKey===ds.toggle?null:ds.toggle;renderDays();}
+  else if(ds.start){S.start=ds.start;save();renderInfo();renderMy();renderHero();renderDays();}
+  else if(ds.packdel!=null){const p=S.pack[+ds.packdel];S.pack.splice(+ds.packdel,1);delete S.packOk[p];save();renderPack();}
+  else if(ds.pack!=null){const p=S.pack[+ds.pack];S.packOk[p]=!S.packOk[p];save();renderPack();}
+  else if('packreset' in ds){S.packOk={};save();renderPack();}
+  else if(ds.meetedit){editMeet=ds.meetedit;renderHero();renderDays();meetInit=meetSnap();const i=document.getElementById('mt');if(i)i.focus();}
+  else if(ds.meetq){const i=document.getElementById('mt');if(i)i.value=ds.meetq;}
+  else if(ds.meetsave){
+    const t=(document.getElementById('mt').value||'').slice(0,5), pl=document.getElementById('mp').value.trim();
+    editMeet=null; meetInit=null; pushMeet(ds.meetsave,t,pl);
+  }
+  else if(ds.meetdel){if(await ask({title:'この集合時間を消しますか？',msg:'みんなの画面からも消えます。',ok:'消す',danger:true})){editMeet=null;meetInit=null;pushMeet(ds.meetdel,'','');}}
+  else if('meetcancel' in ds){if(!(await confirmDiscard())) return; renderHero();renderDays();}
+  else if(ds.scene){
+    noteScene=ds.scene; renderNotes();
+  }
+  else if(ds.want){
+    if(!ensureName()) return;
+    const id=ds.want;
+    noteApi('toggleWant',{id},()=>{const x=NOTES.find(n=>n.id===id); if(!x) return; x.wants=x.wants||[];
+      const i=x.wants.indexOf(S.name); if(i>=0) x.wants.splice(i,1); else x.wants.push(S.name);});
+  }
+  else if(ds.note==='new'){
+    if(noteForm&&!(await confirmDiscard())) return;
+    noteForm={shared:ds.shared!=='0'};
+    renderSheet();
+    const i=document.getElementById('nf-title');if(i)setTimeout(()=>i.focus(),250);
+  }
+  else if(ds.vis||ds.kind){
+    const keep=NF_IDS.map(id=>document.getElementById(id).value);
+    if(ds.vis) noteForm.shared=ds.vis==='1'; else noteForm.kind=ds.kind;
+    document.getElementById('sheet-b').innerHTML=noteFormHtml();
+    NF_IDS.forEach((id,i)=>document.getElementById(id).value=keep[i]);
+  }
+  else if(ds.nkind){
+    noteKind=ds.nkind; renderNotes();
+  }
+  else if(ds.note==='edit'){if(noteForm&&!(await confirmDiscard())) return; noteForm={id:ds.id}; renderSheet();}
+  else if(ds.note==='cancel'){if(!(await confirmDiscard())) return; renderSheet();}
+  else if(ds.note==='del'){
+    const x=NOTES.find(n=>n.id===ds.id);
+    if(await ask({title:'このメモを消しますか？',msg:x&&x.shared===false?'':'みんなの画面からも消えます。',ok:'消す',danger:true}))
+      noteApi('deleteNote',{id:ds.id},()=>{NOTES=NOTES.filter(n=>n.id!==ds.id);},'メモを消しました');
+  }
+  else if(ds.note==='save'){
+    const title=document.getElementById('nf-title').value.trim();
+    if(!title){toast('お店やお土産の名前を入れてください','err');document.getElementById('nf-title').focus();return;}
+    if(!ensureName()) return;
+    const arg={scene:document.getElementById('nf-scene').value,title,shared:!!noteForm.shared,kind:noteForm.kind||'shop',
+      body:document.getElementById('nf-body').value.trim(),url:document.getElementById('nf-url').value.trim()};
+    const id=noteForm.id; noteForm=null; renderSheet();
+    if(id) noteApi('updateNote',Object.assign({id},arg),()=>{const x=NOTES.find(n=>n.id===id); if(x) Object.assign(x,arg);},'更新しました');
+    else noteApi('addNote',arg,()=>{NOTES.push(Object.assign({id:'tmp'+Date.now(),by:S.name,at:new Date().toISOString(),wants:[],mine:true},arg));},arg.shared?'みんなに共有しました':'自分だけのメモに保存しました');
+    noteScene=arg.scene;
+  }
+  else if(ds.clear){
+    const lab='予定ごとのメモ';
+    if(await ask({title:lab+'をすべて消しますか？',ok:'すべて消す',danger:true})){S[ds.clear]={};editMeet=null;save();renderAll();toast('消しました');}
+  }
+  else if('delayopen' in ds){editDelay=true;renderHero();}
+  else if('delaycancel' in ds){editDelay=false;renderHero();}
+  else if(ds.delayset!=null){pushDelay(Number(ds.delayset));}
+  else if(ds.viewSize){S.view.size=ds.viewSize;save();applyView();renderMy();toast('文字の大きさを変えました');}
+  else if(ds.viewToggle){const k=ds.viewToggle;S.view[k]=!S.view[k];save();applyView();renderMy();}
+  else if(ds.packadd){if(!S.pack.includes(ds.packadd)){S.pack.push(ds.packadd);save();renderPack();toast('「'+ds.packadd+'」を足しました');}}
+  else if('gotoken' in ds){if(!goTokenUrl()) toast('アドレスを切り替えられませんでした','err');}
+  else if(ds.sim){
+    if(ds.sim==='set'){const v=document.getElementById('simin').value; if(/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(v)) SIM=toMin(v.slice(0,10),v.slice(11,16));}
+    else SIM=null;
+    S.day=defaultDay(); S.tab='plan'; renderAll(); window.scrollTo(0,0); scrollToNow();
+  }
+});
+let memoTimer;
+document.addEventListener('input',e=>{
+  if(e.target.dataset.memo){
+    const k=e.target.dataset.memo,v=e.target.value;
+    if(v) S.memos[k]=v; else delete S.memos[k];
+    clearTimeout(memoTimer);
+    memoTimer=setTimeout(()=>{save();const s=document.querySelector(`[data-saved="${k}"]`);if(s)s.textContent='保存しました';},400);
+  }
+});
+document.addEventListener('input',e=>{
+  if(e.target.id==='memq'){mq=e.target.value;document.getElementById('memlist').innerHTML=memberRows();}
+});
+document.addEventListener('submit',e=>{
+  if(e.target.id==='addform'){
+    const v=document.getElementById('addin').value.trim();
+    if(v&&!S.pack.includes(v)){S.pack.push(v);save();}
+    renderPack(); document.getElementById('addin').focus();
+  }
+});
+/* メモ欄を閉じたときにカードのメモ表示を更新 */
+document.addEventListener('focusout',e=>{if(e.target.dataset&&e.target.dataset.memo){save();}});
+
+(function(){
+  let x0=null,y0=0;
+  const el=document.getElementById('daybody');
+  el.addEventListener('touchstart',e=>{const t=e.touches[0];x0=t.clientX;y0=t.clientY;},{passive:true});
+  el.addEventListener('touchend',e=>{
+    if(x0==null) return; const t=e.changedTouches[0], dx=t.clientX-x0, dy=t.clientY-y0; x0=null;
+    if(Math.abs(dx)<70||Math.abs(dy)>45) return;
+    if(isTypingIn('#daybody')) return;
+    const nd=S.day+(dx<0?1:-1); if(nd<0||nd>=DAYS.length) return;
+    S.day=nd; openKey=null; save(); renderDays();
+    const top=document.getElementById('days').getBoundingClientRect().top+window.scrollY-10;
+    if(window.scrollY>top) window.scrollTo({top,behavior:SB()});
+  },{passive:true});
+})();
+function scrollToNow(){
+  requestAnimationFrame(()=>{const el=document.querySelector('#daybody .it.now')||document.querySelector('#daybody .it:not(.done):not(.off)');
+    const n=nowMin(); if(!el||n<ALL()[0].s-60) return;
+    const y=el.getBoundingClientRect().top+window.scrollY-140; if(y>200) window.scrollTo({top:y,behavior:SB()});});
+}
+S.day=defaultDay();
+renderAll(); if(S.tab==='plan') scrollToNow();
+pull(); setInterval(pull,30000);
+let lastDay=Math.floor(nowMin()/1440);
+setInterval(()=>{
+  const a=document.activeElement, typing=a&&/INPUT|TEXTAREA/.test(a.tagName);
+  if(!editMeet&&!editDelay&&!(typing&&a.closest('#hero'))) renderHero();
+  if(!(typing&&a.closest('#t-notes,#t-my'))) renderNotes();
+  const d=Math.floor(nowMin()/1440); if(d!==lastDay){lastDay=d;S.day=defaultDay();}
+  if(!editMeet&&!(typing&&a.closest('#daybody'))) renderDays();
+},20000);
+document.getElementById('sheet').addEventListener('click',async e=>{
+  if(e.target.id!=='sheet') return;
+  if(!(await confirmDiscard())) return; renderSheet();
+});
+document.getElementById('topbar').addEventListener('click',()=>window.scrollTo({top:0,behavior:SB()}));
+(function(){
+  const ptr=document.getElementById('ptr'); let y0=null,pull=0;
+  document.addEventListener('touchstart',e=>{ if(window.scrollY>0||document.body.classList.contains('sheetOpen')||!['plan','notes','my'].includes(S.tab)){y0=null;return;} y0=e.touches[0].clientY; pull=0; },{passive:true});
+  document.addEventListener('touchmove',e=>{ if(y0==null) return; const dy=e.touches[0].clientY-y0; if(dy<=0){pull=0;ptr.style.height='0px';return;}
+    pull=Math.min(90,dy*0.5); ptr.classList.add('drag'); ptr.style.height=pull+'px'; ptr.textContent=pull>=60?'離すと更新します':'引っぱって更新'; },{passive:true});
+  document.addEventListener('touchend',()=>{ if(y0==null) return; y0=null; ptr.classList.remove('drag');
+    if(pull>=60){ptr.textContent='更新しています…';ptr.style.height='40px';manualPull();setTimeout(()=>ptr.style.height='0px',900);}
+    else ptr.style.height='0px'; },{passive:true});
+})();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden){renderHero();renderDays();pull();}});
+</script>
+<script>if("serviceWorker" in navigator){navigator.serviceWorker.register("sw.js").catch(function(){});}</script>
+</body>
+</html>
