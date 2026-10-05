@@ -11,14 +11,13 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<script>
-/* ===== ここだけ書き換える：GASのウェブアプリのURL（/exec で終わるもの） ===== */
-window.TRIP_API_URL = 'https://script.google.com/macros/s/AKfycbzcMRgfH5GDtsIQTGgLTxJlRzguL2FMbC3jHR2TqfBqZqmnrMzB_5n4zaM3DAKGTvfZtA/exec';
-</script>
+<script src="config.js"></script>
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Zen+Kaku+Gothic+New:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -730,6 +729,263 @@ details.memfold .sumv .num{font-size:15px;color:var(--ink);font-weight:800}
 .fixbar b{color:var(--sea)}
 .fixbar.strong{background:var(--lava-soft);border-color:var(--lava)}
 .fixbar.strong b,.fixbar.strong svg{color:var(--lava)}
+
+/* 天気カード（押せる） */
+button.wxcard{width:100%;text-align:left;padding:0;font:inherit;color:inherit;position:relative;padding-right:22px}
+.wxmore{position:absolute;right:4px;top:50%;transform:translateY(-50%);color:var(--muted);display:grid;place-items:center}
+.wxmore svg{width:16px;height:16px}
+/* 天気の詳細シート */
+#wxsheet{position:fixed;inset:0;z-index:35;display:none;align-items:flex-end;justify-content:center;background:rgba(20,24,20,.42)}
+#wxsheet.on{display:flex}
+#wxsheet .panel{position:relative;width:100%;max-width:560px;max-height:92%;background:var(--bg);border-radius:18px 18px 0 0;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,.25)}
+@media (prefers-reduced-motion:no-preference){#wxsheet.on .panel{animation:sheetup .22s ease-out}}
+#wxsheet .hd{display:flex;align-items:center;gap:10px;padding:6px 8px 4px 16px;flex:none}
+#wxsheet .hd::before{content:"";position:absolute;left:50%;top:5px;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:var(--line)}
+#wxsheet .hd .tt{flex:1;font-size:16px;font-weight:900;padding-top:6px}
+#wxsheet .hd .x{width:36px;height:36px;display:grid;place-items:center;border-radius:50%;color:var(--muted);margin-top:4px}
+#wxsheet .hd .x svg{width:20px;height:20px}
+#wxsheet .bd{overflow-y:auto;padding:0 14px calc(14px + env(safe-area-inset-bottom,0px));overscroll-behavior:contain}
+.wxday{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:10px}
+.wxday.today{border-color:var(--lava);box-shadow:0 0 0 2px var(--lava-soft)}
+.wxdh{display:flex;align-items:center;gap:10px}
+.wxbig{width:38px;height:38px;color:var(--sea)}
+.wxdt{font-size:15px;font-weight:900}
+.wxds{font-size:13px;color:var(--muted);font-weight:700}
+.wxdtemp{margin-left:auto;text-align:right;line-height:1.05}
+.wxdtemp b{font-size:26px;font-weight:800;display:block}
+.wxdtemp span{font-size:15px;color:var(--muted);font-weight:700}
+.wxstats{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;margin-top:10px;font-size:13px}
+.wxstats div{display:flex;justify-content:space-between;gap:6px;border-bottom:1px dashed var(--line);padding-bottom:3px}
+.wxstats div:last-child{grid-column:1 / -1}
+.wxstats span{color:var(--muted);font-weight:700}
+.wxstats b{font-weight:800}
+.wxhours{display:grid;grid-template-columns:repeat(6,1fr);gap:2px;margin-top:10px;text-align:center}
+.wxh{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:11.5px;color:var(--muted);font-weight:700;padding:4px 0;border-radius:6px;background:var(--bg)}
+.wxh svg{width:18px;height:18px;color:var(--sea)}
+.wxh b{font-size:15px;color:var(--ink);font-weight:800}
+.wxhr{font-size:11px}
+.wxdress{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--lava-soft)}
+.wxdl{display:flex;align-items:center;gap:6px;font-size:13.5px;font-weight:900;color:var(--lava)}
+.wxdl svg{width:16px;height:16px}
+.wxdress ul{margin:4px 0 0;padding-left:1.2em;font-size:13.5px;line-height:1.55}
+.wxday .link{display:inline-block;margin-top:8px;font-size:13px}
+
+/* 地図 */
+#daymap-wrap{margin:6px 0 4px}
+.maphead{display:flex;justify-content:space-between;align-items:center;margin:0 2px 6px}
+.maphead .link{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:900}
+.maphead svg{width:15px;height:15px}
+#daymap{height:190px;border-radius:12px;border:1px solid var(--line);overflow:hidden;z-index:0}
+.mk span{display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:#fff;border:2px solid #0f5248;color:#0f5248;font:800 13px "Barlow Condensed",sans-serif;box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.mk.next span{background:#0f5248;color:#fff}
+.mk.now span{background:#b06f00;border-color:#b06f00;color:#fff;box-shadow:0 0 0 5px rgba(196,128,15,.25)}
+.mk.done span{opacity:.5}
+.leaflet-container{font-family:inherit}
+/* 方言 */
+/* 旅のコラム（ボタン） */
+.colbar{display:flex;align-items:center;gap:8px;width:100%;margin:14px 0 0;padding:10px 12px;border-radius:12px;background:var(--paper);border:1px solid var(--line);text-align:left;font-size:13.5px}
+.colbar svg{width:18px;height:18px;color:var(--sea);flex:none}
+.colbar svg:last-child{width:15px;height:15px;color:var(--muted)}
+.colbar b{font-weight:900;flex:none}
+.colbar span{flex:1;color:var(--muted);font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.colitem{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:0 14px;margin-bottom:8px}
+.colitem summary{list-style:none;cursor:pointer;padding:12px 0;font-size:15px;font-weight:900;display:flex;align-items:center;gap:8px}
+.colitem summary::-webkit-details-marker{display:none}
+.colitem summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin-left:auto;transition:transform .15s}
+.colitem[open] summary::after{transform:rotate(-135deg)}
+.colitem p{margin:0 0 10px;font-size:14px;line-height:1.7}
+.colitem[open]{padding-bottom:4px}
+/* 見どころ */
+.spotinfo{margin:8px 0 2px;padding:8px 10px;border-radius:8px;background:var(--paper);border:1px solid var(--line)}
+.hero .spotinfo{background:rgba(255,255,255,.7)}
+.sih{display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:900;color:var(--sea)}
+.sih svg{width:14px;height:14px}
+.spotinfo ul{margin:3px 0 0;padding-left:1.15em;font-size:13px;line-height:1.55}
+
+#daymap{height:200px}
+
+
+
+.dlgch{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.dlgch button{padding:13px 8px;border-radius:10px;font-size:14.5px;font-weight:900;border:1.5px solid var(--line);background:#fff;color:var(--ink)}
+.dlgch button:active{background:var(--sea);color:#fff}
+
+
+
+#dlg input[type=time]{font-family:"Barlow Condensed",system-ui,sans-serif;font-size:24px;font-weight:800;text-align:center;letter-spacing:.02em}
+
+.dlgch{grid-template-columns:1fr}
+
+#dlg input[type=time]{font-family:"Barlow Condensed",system-ui,sans-serif;font-size:24px;font-weight:800;text-align:center;letter-spacing:.02em}
+
+.dlgch{grid-template-columns:1fr}
+
+/* ---- 仕上げ：上部カードは大胆に、帯はそろえて、枠は控えめに ---- */
+.hero .what{font-size:28px;line-height:1.25;letter-spacing:.005em}
+.hero .blk-now,.hero .blk-next,.hero .blk-plain{border-radius:4px 14px 14px 4px}
+.hero .left .num{font-size:36px;letter-spacing:-.01em}
+.go .dest .num{font-size:42px}
+.go .dest b{font-size:23px}
+.spotinfo{border:0;background:rgba(255,255,255,.55);padding:9px 11px}
+.hero .blk-next .spotinfo{background:rgba(255,255,255,.55)}
+.spotinfo li.tag{list-style:none;margin-left:-1.15em;padding-left:0;margin-top:3px}
+.spotinfo .tg{display:inline-block;font-size:11px;font-weight:900;color:var(--sea);border:1px solid var(--sea);border-radius:4px;padding:0 5px;margin-right:6px;vertical-align:1px;line-height:1.5}
+/* 日程タブの上部の帯：高さ・角丸・余白をそろえる */
+.wxcard,#daymap,.albumbar{border-radius:12px}
+.wxcard{margin-bottom:6px}
+#daymap-wrap{margin:8px 0 6px}
+.maphead{margin-bottom:6px}
+/* 日付タブ：薄い帯の上に */
+.days{border-bottom:0;background:var(--bg);padding-top:2px}
+.days button{font-size:14px}
+.days button[aria-selected="true"]{border-bottom-width:3px}
+/* 枠線を控えめに、角丸を統一 */
+.rows,.note-card,.recap,.wxday,.nlist{border-color:rgba(20,24,20,.09)}
+.note-card{box-shadow:0 1px 2px rgba(20,24,20,.05)}
+.btn{border-color:rgba(20,24,20,.16)}
+/* アイコンの線の太さを統一 */
+svg.i{stroke-width:1.9}
+nav button svg{stroke-width:1.8}
+.btn svg.i{stroke-width:2}
+@media (max-width:430px){
+  .hero .what{font-size:24px}
+  .hero .left .num{font-size:30px}
+  .go .dest .num{font-size:36px}
+  .go .dest b{font-size:20px}
+}
+
+.delayform .chlab{font-size:12px;font-weight:900;color:var(--muted);margin:8px 0 4px}
+.delayform .chips{margin:0}
+.delayform .chips.four{grid-template-columns:repeat(4,1fr)}
+.delayform .chips.one{grid-template-columns:1fr;margin-top:8px}
+.delaybar.early{border-color:var(--sea);color:var(--sea)}
+
+/* 投稿ボタン：しっかり押せる見た目に */
+.write.solid{border:0;background:var(--sea);color:#fff;font-weight:900;font-size:15.5px;padding:13px;box-shadow:0 3px 10px rgba(15,82,72,.25)}
+.write.solid svg{color:#fff}
+.write.solid:active{opacity:.85}
+/* 右下の投稿ボタン（みんなのメモを開いているとき） */
+#fab{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:11;display:none;align-items:center;gap:6px;
+  padding:0 18px 0 14px;height:52px;border-radius:26px;background:var(--sea);color:#fff;font-weight:900;font-size:15px;box-shadow:0 6px 18px rgba(15,82,72,.35)}
+#fab svg{width:22px;height:22px;stroke-width:2}
+body.onnotes:not(.locked):not(.sheetOpen) #fab{display:flex}
+body.standalone #fab{bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+#fab:active{transform:scale(.96)}
+
+
+
+
+
+.colitem summary .cn{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--sea);color:var(--sea);font-size:12px;font-weight:800;flex:none}
+.colitem[open] summary .cn{background:var(--sea);color:#fff}
+
+/* アルバムとコラム：小さなボタン2つ */
+.extras{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0 4px}
+.extras.one{grid-template-columns:1fr}
+.exbtn{display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 8px;border-radius:12px;background:var(--paper);border:1px solid var(--line);color:var(--ink);text-decoration:none;font:inherit;font-size:14px;font-weight:900}
+.exbtn svg{width:18px;height:18px;color:var(--sea)}
+.exbtn:active{background:var(--bg)}
+
+/* 上部カードの見どころ：たたんでおく */
+.spotinfo.fold{padding:0 11px}
+.spotinfo.fold summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:5px;padding:7px 0;font-size:12.5px;font-weight:900;color:var(--sea)}
+.spotinfo.fold summary::-webkit-details-marker{display:none}
+.spotinfo.fold summary svg{width:14px;height:14px}
+.spotinfo.fold .sc{font-size:12px;color:var(--muted);font-weight:800;margin-left:2px}
+.spotinfo.fold summary::after{content:"";width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin-left:auto;margin-top:-3px;transition:transform .15s}
+.spotinfo.fold[open] summary::after{transform:rotate(-135deg);margin-top:3px}
+.spotinfo.fold ul{margin:0 0 8px}
+
+/* ---- 下のメニュー：字とマークを大きく ---- */
+nav button{font-size:12.5px;min-height:62px;padding:8px 0 8px;gap:3px;letter-spacing:0}
+nav button svg,nav button svg.i{width:25px;height:25px;stroke-width:1.9}
+nav .dot{top:7px;left:calc(50% + 10px);width:9px;height:9px}
+.wrap{padding-bottom:calc(88px + env(safe-area-inset-bottom,0px))}
+body.standalone .wrap{padding-bottom:calc(104px + env(safe-area-inset-bottom,0px))}
+#toast{bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+body.standalone #toast{bottom:calc(112px + env(safe-area-inset-bottom,0px))}
+#fab{bottom:calc(86px + env(safe-area-inset-bottom,0px))}
+body.standalone #fab{bottom:calc(102px + env(safe-area-inset-bottom,0px))}
+@media (max-width:340px){nav button{font-size:11.5px}nav button svg,nav button svg.i{width:23px;height:23px}}
+/* ---- 押しやすさ ---- */
+button,a,summary,[data-toggle]{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.btn,.links .btn{min-height:42px}
+.link{padding:6px 2px;margin:-6px -2px}
+.btn:active,.exbtn:active,.tonight:active{transform:scale(.97)}
+.it .card:active{background:rgba(15,82,72,.05)}
+nav button:active svg{transform:scale(.9)}
+@media (prefers-reduced-motion:reduce){.btn:active,.exbtn:active,.tonight:active,nav button:active svg{transform:none}}
+/* ---- 電波がないとき ---- */
+.offline{display:flex;align-items:center;gap:6px;margin:0 0 8px;padding:7px 10px;border-radius:8px;background:#f3f1ea;color:var(--muted);font-size:12.5px;font-weight:700}
+.offline svg{width:15px;height:15px;flex:none}
+
+/* 日ごとの天気カード */
+.wxday1{display:block;width:100%;text-align:left;font:inherit;color:inherit;margin:8px 0 6px;padding:10px 12px 9px;border-radius:12px;background:var(--paper);border:1px solid var(--line)}
+.wxsegs{display:grid;grid-template-columns:1fr;gap:6px}
+.wxsegs.two{grid-template-columns:1fr 1fr}
+.wxseg{display:flex;align-items:center;gap:8px;min-width:0}
+.wxseg .wxi{width:32px;height:32px;color:var(--sea);flex:none}
+.wxsm{min-width:0}
+.wxcity{font-size:12px;font-weight:900;color:var(--muted)}
+.wxcity span{margin-left:6px;color:var(--ink)}
+.wxnums{display:flex;align-items:baseline;gap:8px;white-space:nowrap}
+.wxnums .wxt{font-size:13px;color:var(--muted);font-weight:700}
+.wxnums .wxt b{font-size:19px;color:var(--ink);font-weight:800}
+.wxnums .wxr{margin-left:0}
+.wxhrow{display:grid;grid-template-columns:repeat(6,1fr);margin-top:8px;padding-top:7px;border-top:1px dashed var(--line)}
+.wxhh{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:11px;color:var(--muted);font-weight:700}
+.wxhh i{font-style:normal}
+.wxhh svg{width:16px;height:16px;color:var(--sea)}
+.wxhh b{font-size:13.5px;color:var(--ink);font-weight:800}
+.wxtip{display:flex;align-items:center;gap:6px;margin-top:7px;padding-top:7px;border-top:1px dashed var(--line);font-size:12.5px;font-weight:700}
+.wxtip svg{width:15px;height:15px;color:var(--lava);flex:none}
+.wxtip>span:first-of-type{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wxgo{display:inline-flex;align-items:center;color:var(--sea);font-weight:900;flex:none}
+.wxgo svg{width:13px;height:13px;color:var(--sea)}
+.wxday1:active{background:var(--bg)}
+
+/* 3日分の天気：1列ずつ押せる */
+div.wxcard{padding-right:0}
+.wxcard .wxcol{font:inherit;color:inherit;text-align:left;background:transparent;border:0;border-left:1px solid var(--line);position:relative}
+.wxcard .wxcol:first-child{border-left:0}
+.wxcard .wxcol.today{background:var(--lava-soft)}
+.wxcard .wxcol:active{background:var(--bg)}
+.wxcard .wxcol::after{content:"";position:absolute;right:6px;top:9px;width:5px;height:5px;border-right:1.5px solid var(--muted);border-bottom:1.5px solid var(--muted);transform:rotate(-45deg);opacity:.7}
+
+.wxcard .wxcol{padding:6px 7px 6px;min-width:0;overflow:hidden;font-size:13px}
+.wxcard .wxm{gap:4px}
+.wxcard .wxi,.wxcard svg.i.wxi{width:20px;height:20px}
+.wxcard .wxt{font-size:12px}
+.wxcard .wxt b{font-size:16px}
+.wxcard .wxr{font-size:11px;gap:1px}
+.wxcard .wxr svg,.wxcard .wxr svg.i{width:11px;height:11px}
+@media (max-width:360px){.wxcard .wxt b{font-size:14px}.wxcard .wxr{font-size:10px}}
+
+.wxcard .wxd{display:flex;align-items:center;gap:0}
+.wxcard .wxd .wxr{margin-left:auto;font-size:11px;color:var(--muted)}
+.wxcard .wxcol::after{display:none}
+.wxcard .wxgo2{margin-left:auto;color:var(--muted);display:grid;place-items:center}
+.wxcard .wxgo2 svg,.wxcard .wxgo2 svg.i{width:13px;height:13px}
+
+/* 連絡事項 */
+.notice{margin:0 0 10px;padding:8px 8px 10px 12px;border-radius:4px 12px 12px 4px;background:#fff;border-left:5px solid var(--sea);box-shadow:0 1px 4px rgba(15,82,72,.12)}
+.notice .nh{display:flex;align-items:center;gap:6px;font-size:11.5px;font-weight:900;color:var(--sea)}
+.notice .nh svg{width:15px;height:15px}
+.notice .nu{color:var(--muted);font-weight:800;font-size:12px}
+.notice .nx{margin-left:auto;width:30px;height:30px;display:grid;place-items:center;color:var(--muted);margin-top:-4px;margin-right:-2px}
+.notice .nx svg{width:15px;height:15px}
+.notice .nt{font-size:15px;font-weight:800;line-height:1.5;margin-top:1px}
+.orgline{display:flex;justify-content:flex-end;margin:2px 0 4px}
+.orgline .link{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--muted);font-weight:700;text-decoration:none;padding:4px 2px}
+.orgline .link svg{width:13px;height:13px}
+/* 終わった日のメモ */
+.pastnotes{margin-top:14px;border-top:1px dashed var(--line);padding-top:6px}
+.pastnotes>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:6px;padding:8px 2px;font-size:13px;font-weight:900;color:var(--muted)}
+.pastnotes>summary::-webkit-details-marker{display:none}
+.pastnotes>summary .num{font-size:13px}
+.pastnotes>summary::after{content:"";width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin-left:auto;margin-top:-3px}
+.pastnotes[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
+.pastnotes .note-card{opacity:.75}
 </style>
 </head>
 <body class="locked">
@@ -739,16 +995,18 @@ details.memfold .sumv .num{font-size:15px;color:var(--ink);font-weight:800}
   <section class="tab on" id="t-plan">
     <div id="weather"></div>
     <div class="days" role="tablist" id="days"></div>
+    <div id="daymap-wrap"><div class="maphead"><button class="link" data-mapt aria-expanded="true" id="mapt"></button><button class="link" data-locate id="locate"></button></div><div id="daymap" aria-label="今日のルート地図"></div></div>
     <div id="daybody"></div>
   </section>
 
-  <section class="tab" id="t-info"></section>
+    <section class="tab" id="t-info"></section>
   <section class="tab" id="t-my"></section>
   <section class="tab" id="t-notes"></section>
 </div>
 
 <nav aria-label="画面の切り替え"><div class="in" id="nav"></div></nav>
 <button id="topbar" aria-label="先頭に戻る"></button>
+<button id="fab" data-note="new" aria-label="メモを投稿する"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M13.5 7.5l3 3"/></svg><span>投稿</span></button>
 <div id="sheet" role="dialog" aria-modal="true"><div class="panel">
   <div class="hd"><div class="tt" id="sheet-t"></div><button class="x" data-note="cancel" aria-label="閉じる"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
   <div class="bd" id="sheet-b"></div>
@@ -780,10 +1038,15 @@ details.memfold .sumv .num{font-size:15px;color:var(--ink);font-weight:800}
   <div class="gspin" aria-hidden="true"></div>
   <div class="gerr" id="gate-e" role="alert"></div>
 </div></div>
+<div id="wxsheet" class="sheetlike" role="dialog" aria-modal="true" aria-labelledby="wxsheet-t"><div class="panel">
+  <div class="hd"><div class="tt" id="wxsheet-t">天気と服装の目安</div><button class="x" data-wxclose aria-label="閉じる"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="bd" id="wxsheet-b"></div>
+</div></div>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-t"><div class="dlgbox">
   <div class="tt" id="dlg-t"></div><div class="mm" id="dlg-m"></div>
   <input id="dlg-i" style="display:none">
+  <div class="dlgch" id="dlg-ch" style="display:none"></div>
   <div class="bt"><button id="dlg-c">キャンセル</button><button class="ok" id="dlg-o">OK</button></div>
 </div></div>
 
@@ -846,6 +1109,11 @@ const P={
   fog:'<path d="M7 14a4 4 0 0 1-.5-8 5.5 5.5 0 0 1 10.6 1.3A3.4 3.4 0 0 1 17 14z"/><path d="M5 18h14M7 21h10"/>',
   umbrella:'<path d="M3.5 12a8.5 8.5 0 0 1 17 0z"/><path d="M12 12v6.5a2 2 0 0 0 4 0"/>',
   photo:'<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="m21 16-5-5-8 8"/>',
+  chevron:'<path d="m9 6 6 6-6 6"/>',
+  wind:'<path d="M3 8h11a3 3 0 1 0-3-3M3 12h15a3 3 0 1 1-3 3M3 16h7"/>',
+  shirt:'<path d="M8 3 3.5 6l2 4L8 9v12h8V9l2.5 1 2-4L16 3a4 4 0 0 1-8 0z"/>',
+  edit:'<path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M13.5 7.5l3 3"/>',
+  wifi:'<path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.3" r="1.1"/><path d="M3 3l18 18"/>',
   note:'<path d="M5 4h10l4 4v12H5zM15 4v4h4M8 12h8M8 15.5h5"/>'
 };
 const ic=(n,c='i')=>`<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
@@ -902,6 +1170,45 @@ const DAYS=[
  ]}
 ];
 
+/* 地図用の位置（Googleの場所データより） */
+const COORDS={
+  '小松空港':[36.3928,136.4060],'羽田空港第1ターミナル':[35.5491,139.7835],'鹿児島空港':[31.8007,130.7203],
+  '錦灘酒造 バレルバレープラハ':[31.7970,130.7137],'霧島神宮':[31.8587,130.8714],'黒酢本舗 桷志田':[31.6485,130.8225],
+  '有村溶岩展望所':[31.5551,130.6789],'桜島港フェリーターミナル':[31.5922,130.5999],'桜島フェリー':[31.5965,130.5628],
+  'ホテルオリエンタルエクスプレス鹿児島天文館':[31.5883,130.5515],'熊襲亭 天文館':[31.5920,130.5535],
+  '知覧武家屋敷庭園':[31.3774,130.4427],'知覧特攻平和会館':[31.3636,130.4343],'知覧桜見亭':[31.3625,130.4315],
+  '仙巌園':[31.6174,130.5772],'山江サービスエリア':[32.2615,130.7688],'ダイワロイネットホテル熊本':[32.8015,130.7061],
+  '郷土料理 青柳 熊本':[32.8021,130.7084],'水前寺成趣園':[32.7912,130.7334],'熊本城':[32.8062,130.7058],
+  '桜の馬場 城彩苑':[32.8037,130.7038],'熊本空港':[32.8350,130.8590]
+};
+const posOf=it=>COORDS[it.map]||COORDS[it.title]||null;
+
+/* 見どころひとこと */
+const SPOT_INFO={
+  '鹿児島空港':['到着ロビー前に無料の足湯「おやっとさぁ」。バス待ちのひとときに','実用：鹿児島土産（かるかん、さつま揚げ、焼酎）は帰りの熊本空港にはないものも。気になるものは今日のうちに'],
+  '錦灘酒造 バレルバレープラハ':['焼酎と麹をテーマにした施設で、蔵元のレストラン','実用：焼酎や麹の試飲・販売あり。重いものは配送もできる'],
+  '霧島神宮':['朱塗りの本殿・幣殿・拝殿は2022年に国宝に指定','境内には樹齢約800年といわれる御神木の杉','坂本龍馬が妻のお龍と訪れた「日本初の新婚旅行」の地としても有名','写真：参道の先に見える朱の社殿を正面から。手水舎の水は温泉'],
+  '黒酢本舗 桷志田':['屋外にずらりと並ぶ壺の中で、黒酢をじっくり発酵・熟成','写真：壺畑の向こうに錦江湾と桜島。壺を手前に入れると雰囲気が出る','実用：売店に黒酢・ドレッシング・黒酢ドリンク。試飲できる'],
+  '有村溶岩展望所':['大正噴火（1914年）で流れ出た溶岩原の上をめぐる遊歩道','桜島の南岳をいちばん近くから見上げられる展望所のひとつ','写真：遊歩道の先の展望台から、溶岩原と噴煙を上げる南岳','実用：遊歩道は舗装されていて歩きやすい。日差しが強い日は帽子を。売店とトイレあり'],
+  '桜島港フェリーターミナル':['実用：ターミナルに売店・トイレあり。乗船前に済ませておくと安心'],
+  '桜島フェリー':['鹿児島市街と桜島を約15分で結ぶ、24時間運航の市民の足','船内の「やぶ金」のうどんが名物。15分の間に食べる人も','写真：デッキに出ると、離れていく桜島と近づく市街地の両方が撮れる'],
+  'ホテルオリエンタルエクスプレス鹿児島天文館':['実用：天文館のアーケード街まで徒歩数分。夜の散策や2次会に便利'],
+  '熊襲亭 天文館':['きびなごの刺身、黒豚、さつま揚げなど薩摩の郷土料理','実用：「酒寿司」など鹿児島ならではの一品に出会えることも'],
+  '知覧武家屋敷庭園':['「薩摩の小京都」と呼ばれる武家屋敷群。7つの庭園が公開されている','庭園は国の名勝。生垣と石垣が続く通りも絵になる','写真：石垣と生垣がまっすぐ続く本馬場通り。午前は光が柔らかい','実用：7つの庭園は1本の通り沿い。公衆トイレは通りの中ほど'],
+  '知覧特攻平和会館':['特攻隊員の遺影や遺書、手紙などを展示する施設','実用：館内は撮影禁止。静かに見学を。音声ガイド（タブレット）の貸し出しあり'],
+  '知覧桜見亭':['実用：お土産売り場が併設。知覧茶はここで買える'],
+  '仙巌園':['1658年に島津家19代光久が築いた別邸と庭園','桜島を築山、錦江湾を池に見立てた雄大な借景','隣の尚古集成館は世界遺産「明治日本の産業革命遺産」の構成資産','写真：御殿の前から、庭園越しに桜島を入れた一枚が定番','実用：園内に売店と飲食あり。両棒餅（ぢゃんぼもち）が名物'],
+  '山江サービスエリア':['山江村は栗の産地。栗を使ったお菓子がおみやげに人気','実用：トイレ・コンビニあり。休憩は15分なので手早く'],
+  'ダイワロイネットホテル熊本':['実用：熊本城まで徒歩圏。下通・上通のアーケードもすぐそばで、夜の散策に便利'],
+  '郷土料理 青柳 熊本':['馬刺し、からし蓮根、一文字ぐるぐるなど熊本の郷土料理'],
+  '水前寺成趣園':['熊本藩主・細川家が代々手を入れてきた桃山式の回遊庭園','富士山をかたどった築山と、阿蘇の伏流水がわく池が見どころ','写真：入口から池をはさんで築山を望む構図が定番','実用：日陰が少ないので、晴れた日は帽子や日傘を。鯉のえさは売店で'],
+  '熊本城':['加藤清正が築いた名城。反り返る「武者返し」の石垣が有名','2016年の熊本地震で被災し、2021年に天守閣の復旧が完了','写真：二の丸広場から見上げる天守。石垣の反りも入れると迫力が出る','実用：天守内はエレベーターあり。復旧の様子を見られる特別見学通路も'],
+  '桜の馬場 城彩苑':['熊本城のふもとに城下町の町並みを再現した観光施設','いきなり団子や馬肉料理など、熊本の名物を味わえる','実用：お土産は種類が多い。トイレ・コインロッカーあり。買い物と昼食は時間に余裕をみて'],
+  '熊本空港':['実用：くまモングッズはここが充実。保安検査のあとにもお店が多い']
+};
+const infoOf=it=>SPOT_INFO[it.map]||SPOT_INFO[it.title]||null;
+
+
 let ROSTER=[]; /* 名簿は本人確認のあとにサーバーから受け取る */
 let CONTACTS=[];
 const DEFAULT_PACK=['健康保険証','財布・現金','スマホと充電器','モバイルバッテリー','着替え（2泊分）','洗面用具','常備薬','羽織るもの（朝晩用）','歩きやすい靴','折りたたみ傘','ハンカチ・ティッシュ','エコバッグ','マスク（火山灰対策）','日焼け止め'];
@@ -925,6 +1232,28 @@ function applyView(){
   r.classList.toggle('calm',!!S.view.calm||osCalm);
 }
 let A11Y_OPEN=false, MEM_OPEN=false;
+/* 開いたものが、画面（またはシート）の中央に全体で見えるように動かす。
+   全体が入りきらない長さなら、頭が見える位置にそろえる */
+function reveal(el){
+  if(!el) return;
+  const box=el.closest('.bd')||null;
+  const vh=box?box.clientHeight:(window.innerHeight-(document.querySelector('nav')?.offsetHeight||0));
+  const top0=box?box.getBoundingClientRect().top:0;
+  const r=el.getBoundingClientRect(), h=r.height, top=r.top-top0;
+  let delta;
+  if(h<=vh-24) delta=top-(vh-h)/2;     /* 収まる：中央に */
+  else delta=top-12;                   /* 収まらない：頭を上に */
+  if(Math.abs(delta)<4) return;
+  if(box) box.scrollBy({top:delta,behavior:SB()}); else window.scrollBy({top:delta,behavior:SB()});
+}
+/* コラムは1つだけ開く（開いたら他は閉じる） */
+document.addEventListener('toggle',e=>{
+  const t=e.target; if(t.dataset&&t.dataset.spot&&!t.open&&SPOT_OPEN===t.dataset.spot) SPOT_OPEN='';
+  if(!t.tagName||t.tagName!=='DETAILS'||!t.open) return;
+  if(t.classList.contains('colitem')) document.querySelectorAll('.colitem[open]').forEach(x=>{if(x!==t) x.open=false;});
+  if(t.dataset&&t.dataset.spot) SPOT_OPEN=t.dataset.spot;
+  setTimeout(()=>reveal(t),60);
+},true);
 document.addEventListener('toggle',e=>{if(e.target.id==='a11y') A11Y_OPEN=e.target.open; if(e.target.id==='memfold') MEM_OPEN=e.target.open;},true);
 const SB=()=>document.documentElement.classList.contains('calm')?'auto':'smooth';
 applyView();
@@ -953,6 +1282,36 @@ function goTokenUrl(){
   try{const w=window.open(u,'_top'); return !!w;}catch(__){ return false; }
 }
 /* 今のアドレスに合言葉が付いていないとき、上部に案内を出す（ホーム画面から開いたときは特に目立たせる） */
+/* ---------- 連絡事項（幹事・添乗員から全員へ） ---------- */
+function noticeBar(){
+  if(!NOTICE||!NOTICE.text) return '';
+  const id=NOTICE.text+'|'+NOTICE.until; let hid=''; try{hid=localStorage.getItem(KEY+'-notice-hid')||'';}catch(_){}
+  if(hid===id) return '';
+  return `<div class="notice"><div class="nh">${ic('info')}<span>幹事からの連絡</span>${NOTICE.until?`<span class="nu num">${NOTICE.until}まで</span>`:''}<button class="nx" data-noticehide aria-label="閉じる">${ic('x')}</button></div>
+    <div class="nt">${esc(NOTICE.text).replace(/\n/g,'<br>')}</div></div>`;
+}
+function noticeEntry(){
+  return `<div class="orgline"><button class="link" data-noticeedit>${ic('edit')}${NOTICE&&NOTICE.text?'連絡事項を書き換える':'連絡事項を書き込む'}</button></div>`;
+}
+async function editNotice(){
+  const v=await ask({title:'全員への連絡事項',msg:'集合時間・時間のずれ以外の連絡に。全員の画面の一番上に出ます。空にして進むと消えます。',ok:'次へ',input:{type:'text',value:NOTICE?NOTICE.text:'',placeholder:'例：バスは2号車です／朝食は6:30から'}});
+  if(v==null) return;
+  let until='';
+  if(v){
+    const base=Math.ceil((nowMin()+60)/30)*30;
+    const t=await ask({title:'何時まで表示しますか？',msg:'その時刻を過ぎると自動で消えます。空のまま進むと、消すまで表示します。',ok:'書き込む',input:{type:'time',value:fmtT(base)}});
+    if(t==null) return;
+    until=t||'';
+  }
+  const send=()=>api('setNotice',{text:v,until,pass:S.pass});
+  send().catch(err=>{
+    if(String(err).includes('PASSCODE'))
+      return ask({title:'編集用のパスコード',msg:'集合時間などを入力できる人のパスコードです。',ok:'書き込む',input:{type:'password',placeholder:'パスコード'}})
+        .then(pc=>{if(!pc) throw new Error('CANCEL'); S.pass=pc; save(); return send();});
+    throw err;
+  }).then(n=>{NOTICE=n||null;try{localStorage.removeItem(KEY+'-notice-hid');}catch(_){} renderHero();renderWeather();toast(n?'連絡事項を書き込みました':'連絡事項を消しました');})
+    .catch(err=>{const s=String(err); if(!s.includes('CANCEL')) toast(s.includes('PASSCODE')?'パスコードが違います':'保存できませんでした。電波を確認してください','err');});
+}
 function tokenBanner(){
   if(!HAS_RUN||AUTH!=='ok'||!tokenUrl()||META_TOKEN===TOKEN) return '';
   const sa=document.body.classList.contains('standalone');
@@ -976,7 +1335,7 @@ function gotMeet(m){
   MEET=m||{}; SYNC.ok=true; SYNC.at=Date.now();
   try{localStorage.setItem(KEY+'-meet',JSON.stringify(MEET));}catch(e){}
 }
-let NOTES=[], WEATHER=null, ALBUM='';
+let NOTES=[], WEATHER=null, ALBUM='', NOTICE=null;
 try{const c=localStorage.getItem(KEY+'-notes'); if(c) NOTES=JSON.parse(c)||[];}catch(e){}
 function gotNotes(list){
   NOTES=Array.isArray(list)?list:[];
@@ -991,18 +1350,22 @@ function toast(msg,kind){
   requestAnimationFrame(()=>el.classList.add('on'));
   clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('on'),kind==='err'?3800:2000);
 }
-function ask({title,msg='',ok='OK',cancel='キャンセル',danger=false,input=null}){
+function ask({title,msg='',ok='OK',cancel='キャンセル',danger=false,input=null,choices=null}){
   return new Promise(res=>{
-    const d=document.getElementById('dlg'), i=document.getElementById('dlg-i');
+    const d=document.getElementById('dlg'), i=document.getElementById('dlg-i'), ch=document.getElementById('dlg-ch');
+    ch.innerHTML=choices?choices.map(c=>`<button data-choice="${esc(String(c.v))}">${esc(c.label)}</button>`).join(''):'';
+    ch.style.display=choices?'grid':'none';
+    document.getElementById('dlg-o').style.display=choices?'none':'';
     document.getElementById('dlg-t').textContent=title;
     document.getElementById('dlg-m').textContent=msg;
     const o=document.getElementById('dlg-o'), c=document.getElementById('dlg-c');
     o.textContent=ok; c.textContent=cancel; o.classList.toggle('danger',danger);
     if(input){i.style.display='';i.type=input.type||'text';i.value=input.value||'';i.placeholder=input.placeholder||'';}
     else i.style.display='none';
-    const done=v=>{d.classList.remove('on');o.onclick=c.onclick=d.onclick=i.onkeydown=document.onkeydown=null;res(v);};
+    const done=v=>{d.classList.remove('on');o.onclick=c.onclick=d.onclick=i.onkeydown=document.onkeydown=ch.onclick=null;res(v);};
+    ch.onclick=e=>{const b=e.target.closest('[data-choice]'); if(b) done(b.getAttribute('data-choice'));};
     o.onclick=()=>done(input?i.value.trim():true);
-    c.onclick=()=>done(input?null:false);
+    c.onclick=()=>done((input||choices)?null:false);
     d.onclick=e=>{if(e.target===d) done(input?null:false);};
     i.onkeydown=e=>{if(e.key==='Enter') o.click();};
     document.onkeydown=e=>{if(e.key==='Escape') c.click();};
@@ -1063,7 +1426,7 @@ function gotAuth(r){
   const g=document.getElementById('gate'), t=document.getElementById('gate-t'), m=document.getElementById('gate-m'), e=document.getElementById('gate-e');
   g.classList.remove('checking');
   document.body.classList.toggle('locked',AUTH!=='ok');
-  if(AUTH==='ok'){g.classList.remove('pin');return;}
+  if(AUTH==='ok'){g.classList.remove('pin');setTimeout(()=>{try{renderMap();}catch(_){}},80);return;}
   e.textContent=r.err||'';
   gateMode=AUTH;
   /* 覚えていた内容が通らなかったら忘れる（名前は入力欄に残す） */
@@ -1124,7 +1487,7 @@ function pull(force){
     if(r.session&&r.session!==TOKEN){TOKEN=r.session;try{localStorage.setItem(KEY+'-token',TOKEN);}catch(_){}
       /* 名前とパスワードで入った直後：アドレスを「入力なしで開ける形」に切り替える（ホーム画面に追加しても覚えたまま） */
       if(HAS_RUN&&META_TOKEN!==TOKEN) setTimeout(goTokenUrl,400);
-    } ROSTER=r.members||[]; CONTACTS=r.contacts||[]; renderMember(); renderInfo(); gotMe(r.me);gotMeet(r.meet);gotDelays(r.delays);gotNotes(r.notes);WEATHER=r.weather||null;ALBUM=r.albumUrl||'';renderWeather();if(!isTypingIn('#t-info'))renderInfo();migrateLocal();if(S.tab==='notes'){markNotesSeen();}renderNav();renderHero();if(!isTypingIn('#daybody'))renderDays();if(!isTypingIn('#t-notes,#t-my'))renderNotes();})
+    } ROSTER=r.members||[]; CONTACTS=r.contacts||[]; renderMember(); renderInfo(); gotMe(r.me);gotMeet(r.meet);gotDelays(r.delays);gotNotes(r.notes);WEATHER=r.weather||null;ALBUM=r.albumUrl||'';NOTICE=r.notice||null;renderWeather();if(!isTypingIn('#t-info'))renderInfo();migrateLocal();if(S.tab==='notes'){markNotesSeen();}renderNav();renderHero();if(!isTypingIn('#daybody'))renderDays();if(!isTypingIn('#t-notes,#t-my'))renderNotes();})
     .catch(()=>{SYNC.ok=false;renderHero();if(AUTH==='checking'){document.getElementById('gate').classList.remove('checking');document.getElementById('gate-t').textContent='つながりません';document.getElementById('gate-m').textContent='電波のよい場所で開き直してください。';}}).finally(()=>{SYNC.busy=false;});
 }
 function migrateLocal(){
@@ -1288,8 +1651,11 @@ function meetCard(it,n){
 function fmtClock(iso){const d=new Date(new Date(iso).getTime()+9*3600e3);return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0');}
 function syncLine(){
   if(!HAS_GAS) return '';
-  return SYNC.ok?'':`<div class="simflag" style="color:var(--muted)">共有データを受け取れていません。前回受け取った内容を表示しています。</div>`;
+  if(navigator.onLine===false) return `<div class="offline">${ic('wifi')}電波がありません。前回受け取った内容を表示しています</div>`;
+  return SYNC.ok?'':`<div class="offline">${ic('wifi')}共有データを受け取れていません。前回受け取った内容を表示しています</div>`;
 }
+window.addEventListener('offline',()=>{try{renderHero();}catch(_){}});
+window.addEventListener('online',()=>{try{renderHero();SYNC.busy=false;pull(true);}catch(_){}});
 function tonightLink(di){
   const k=di===0?'n1':di===1?'n2':null; if(!k) return '';
   const c=NOTES.filter(x=>x.scene===k).length;
@@ -1302,18 +1668,23 @@ function delayTarget(st){ /* 遅れを入れる起点：つぎの予定（飛行
   return t||null;
 }
 function delayBlock(st){
-  const {n,list}=st; if(n<list[0].s-60||n>=list[list.length-1].en) return '';
+  const {n,list}=st;
+  if(n<list[0].s-60||n>=list[list.length-1].en) return '';
   const tg=delayTarget(st); if(!tg) return '';
   const cur=tg.shift||0, k=kOf(tg), rec=DELAYS[k];
   const who=Object.values(DELAYS).filter(x=>x&&x.by).sort((a,b)=>String(b.at).localeCompare(String(a.at)))[0];
   if(editDelay) return `<div class="delayform">
-    <div class="dh">${ic('clock')}このあとの予定は何分遅れそう？</div>
-    <div class="chips">${[0,5,10,15,20,30,45,60].map(m=>`<button class="btn" data-delayset="${m}" aria-pressed="${cur===m}">${m?m+'分':'予定どおり'}</button>`).join('')}</div>
+    <div class="dh">${ic('clock')}このあとの予定は、どのくらいずれそう？</div>
+    <div class="chlab">遅れ</div>
+    <div class="chips">${[5,10,15,20,30,45,60,90].map(m=>`<button class="btn" data-delayset="${m}" aria-pressed="${cur===m}">${m}分</button>`).join('')}</div>
+    <div class="chlab">巻き（早め）</div>
+    <div class="chips four"><button class="btn" data-delayset="-5" aria-pressed="${cur===-5}">5分</button><button class="btn" data-delayset="-10" aria-pressed="${cur===-10}">10分</button><button class="btn" data-delayset="-15" aria-pressed="${cur===-15}">15分</button><button class="btn" data-delayset="-30" aria-pressed="${cur===-30}">30分</button></div>
+    <div class="chips one"><button class="btn" data-delayset="0" aria-pressed="${cur===0}">予定どおりに戻す</button></div>
     <div class="note">「${esc(tg.title)}」から後ろの時刻をずらして、全員の画面に表示します。飛行機の時刻は変わりません。</div>
     <div class="acts"><button class="link" data-delaycancel>閉じる</button></div></div>`;
-  return cur>0
-    ? `<div class="delaybar"><span>${ic('clock')}約${cur}分遅れで進んでいます${rec&&rec.by?`<small>${esc(rec.by)}さん ${rec.at?fmtClock(rec.at):''}</small>`:''}</span><button class="link" data-delayopen>変更</button></div>`
-    : `<div class="delaybar plain"><span>${ic('clock')}予定どおり</span><button class="link" data-delayopen>遅れを共有</button></div>`;
+  return cur!==0
+    ? `<div class="delaybar${cur<0?' early':''}"><span>${ic('clock')}約${Math.abs(cur)}分${cur>0?'遅れ':'早め'}で進んでいます${rec&&rec.by?`<small>${esc(rec.by)}さん ${rec.at?fmtClock(rec.at):''}</small>`:''}</span><button class="link" data-delayopen>変更</button></div>`
+    : `<div class="delaybar plain"><span>${ic('clock')}予定どおり</span><button class="link" data-delayopen>時間のずれを共有</button></div>`;
 }
 function pushDelay(min){
   const st=status(), tg=delayTarget(st); if(!tg) return;
@@ -1327,7 +1698,7 @@ function pushDelay(min){
       return ask({title:'編集用のパスコード',msg:'遅れや集合時間を入力できる人だけに伝えられているパスコードです。',ok:'保存する',input:{type:'password',placeholder:'パスコード'}})
         .then(pc=>{if(!pc) throw new Error('CANCEL'); S.pass=pc; save(); return send();});
     throw err;
-  }).then(d=>{gotDelays(d);renderHero();renderDays();toast(min?`このあと約${min}分遅れで共有しました`:'予定どおりに戻しました');})
+  }).then(d=>{gotDelays(d);renderHero();renderDays();toast(min?`このあと約${Math.abs(min)}分${min>0?'遅れ':'早め'}で共有しました`:'予定どおりに戻しました');})
     .catch(err=>{ if(before) DELAYS[key]=before; else delete DELAYS[key]; renderHero(); renderDays();
       if(!String(err).includes('CANCEL')) toast(String(err).includes('PASSCODE')?'パスコードが違うため保存できませんでした':'保存できませんでした。電波のよい場所でもう一度お試しください','err'); });
 }
@@ -1383,7 +1754,7 @@ function renderHero(){
     h+=`<div class="state">いま</div>
         <div class="row2"><div class="what" style="margin-top:2px">${esc(cur.title)}</div>
         ${verb?`<span class="left">${verb}<br><span class="num">${dur(ce-n)}</span></span>`:''}</div>
-        <div class="where">${tS(cur)}${cur.e?'〜'+tE(cur):'〜'}${cur.shift?'（予定 '+cur.t+(cur.e?'〜'+cur.e:'')+'）':''}${cur.sub?'　'+esc(cur.sub):''}</div>
+        <div class="where">${tS(cur)}${cur.e?'〜'+tE(cur):'〜'}${cur.shift?'（予定 '+cur.t+(cur.e?'〜'+cur.e:'')+'）':''}${cur.sub?'　'+esc(cur.sub):''}</div>${spotInfo(cur,true)}
         ${(cur.e||hasMeet)&&!(hasMeet&&n>=ce)?`<div class="bar"><i style="width:${pct}%"></i></div>`:''}
         ${moving?'':meetCard(cur,n)+linksHtml(cur)}`;
     if(nx&&nx.di===cur.di) h+=goBlock(nx,ce,n,'つぎ',cur.pen)+laterBlock(st);
@@ -1407,8 +1778,10 @@ function renderHero(){
     const a=h.slice(0,gi), b=h.slice(gi);
     h=(a.replace(/<div class="simflag"[^>]*>.*?<\/div>/g,'').trim()?`<div class="${cur||(prev&&nx&&prev.di===nx.di)?'blk-now':'blk-plain'}">${a}</div>`:'')+`<div class="blk-next">${b}</div>`;
   }
-  el.innerHTML=tokenBanner()+h;
+  el.innerHTML=noticeBar()+tokenBanner()+h;
   document.body.classList.toggle('sub',S.tab!=='plan');
+  document.body.classList.toggle('onnotes',S.tab==='notes');
+  if(S.tab==='plan') setTimeout(()=>{try{renderMap();}catch(_){}},60);
   let bar='';
   if(cur&&!['flight','ferry'].includes(cur.k)&&meetMin(cur)!=null){
     const m=meetOf(cur), mm=meetMin(cur);
@@ -1443,7 +1816,7 @@ function renderDays(){
     const mt=meetOf(it);
     const openNow=openKey===key||editMeet===key;
     h+=`<li class="it${st}${openNow?' open':''}" data-key="${key}">
-      <div class="time num"><span class="s"${it.shift?' style="color:var(--lava)"':''}>${tS(it)}</span>${it.e?`<span class="e">${tE(it)}</span>`:''}${planTag(it)}</div>
+      <div class="time num"><span class="s"${it.shift?` style="color:${it.shift>0?'var(--lava)':'var(--sea)'}"`:''}>${tS(it)}</span>${it.e?`<span class="e">${tE(it)}</span>`:''}${planTag(it)}</div>
       <div class="node"><i></i></div>
       <div class="body">
         <button class="card" data-toggle="${key}" aria-expanded="${openNow}">
@@ -1454,7 +1827,7 @@ function renderDays(){
           ${memo?`<span class="hasmemo">${ic('note')}${esc(memo.split('\n')[0].slice(0,24))}</span>`:''}
         </button>
         <div class="detail">
-          <div style="margin:2px 0 10px">${linksHtml(it)}</div>
+          ${spotInfo(it)}<div style="margin:2px 0 10px">${linksHtml(it)}</div>
           ${['flight','ferry'].includes(it.k)||cs===it?'':`<div class="dlab">集合時間（みんなに共有されます）</div>${meetCard(it,n)}`}
           <div class="dlab" style="margin-top:12px">自分だけのメモ（この端末に保存）</div>
           <textarea data-memo="${key}" placeholder="例：集合場所の目印、ここで買いたいもの">${esc(memo)}</textarea>
@@ -1462,8 +1835,9 @@ function renderDays(){
         </div>
       </div></li>`;
   });
-  h+='</ol>'+albumBar();
+  h+='</ol>'+extrasTiles();
   document.getElementById('daybody').innerHTML=h;
+  try{renderMap();}catch(_){}
 }
 
 /* ---------- info ---------- */
@@ -1627,6 +2001,12 @@ function renderSheet(){
   sh.classList.add('on'); document.body.classList.add('sheetOpen'); updateTopbar();
   if(noteForm.init==null) noteForm.init=noteSnap();
 }
+/* その場面（日）がもう終わったか：1日目のメモは2日目の朝4時から「終わった日」扱い */
+function scenePast(k){
+  const di={n1:0,n2:1,d3:2}[k]; if(di==null) return false;
+  const next=DAYS[di+1]; const end=next?toMin(next.date,'04:00'):toMin(DAYS[di].date,'23:59');
+  return nowMin()>=end;
+}
 function renderNotes(){
   const el=document.getElementById('t-notes'); if(!el) return;
   const cnt=k=>NOTES.filter(x=>x.scene===k).length;
@@ -1636,9 +2016,12 @@ function renderNotes(){
     const pick=x=>(noteScene==='all'||x.scene===noteScene)&&(noteKind==='all'||kindOf(x)===noteKind);
     const ls=NOTES.filter(pick).sort(sortN);
     if(noteScene==='all'){
-      /* すべて：1日目 → 2日目 → 3日目 → その他 の順に、日ごとの見出しを付けて並べる */
-      body=SCENES.map(([k,l])=>{const g=ls.filter(x=>(SCENES.some(s=>s[0]===x.scene)?x.scene:'etc')===k);
-        return g.length?`<div class="scenehead">${esc(l)}<span class="num">${g.length}</span></div>`+g.map(noteCard).join(''):'';}).join('');
+      /* すべて：きょう以降の日を順に。終わった日のメモは一番下にたたむ */
+      const grp=k=>ls.filter(x=>(SCENES.some(s=>s[0]===x.scene)?x.scene:'etc')===k);
+      const sec=([k,l])=>{const g=grp(k);return g.length?`<div class="scenehead">${esc(l)}<span class="num">${g.length}</span></div>`+g.map(noteCard).join(''):'';};
+      const now=SCENES.filter(([k])=>!scenePast(k)), past=SCENES.filter(([k])=>scenePast(k));
+      const pastN=past.reduce((a,[k])=>a+grp(k).length,0);
+      body=now.map(sec).join('')+(pastN?`<details class="pastnotes"><summary>終わった日のメモ<span class="num">${pastN}</span></summary>${past.map(sec).join('')}</details>`:'');
     }else body=ls.map(noteCard).join('');
     if(!body&&HAS_GAS&&!SYNC.at) body=`<div class="loading">読み込み中…</div>`;
     else if(!body) body=`<div class="empty">${mascotImg('empty-mascot')}まだメモはありません。<br>行きたいお店や買いたいお土産を<br>書いてみましょう。</div>`;
@@ -1650,7 +2033,6 @@ function renderNotes(){
       ${[['n1','1日目'],['n2','2日目'],['d3','3日目'],['etc','その他']].map(([k,l])=>`<button data-scene="${k}" aria-pressed="${noteScene===k}"${cnt(k)?'':' class="z"'}><b>${l}</b><span class="num">${cnt(k)}</span></button>`).join('')}
     </div>
     <div class="kindbar"><button data-nkind="all" aria-pressed="${noteKind==='all'}">すべて</button>${Object.entries(KINDS).map(([k,v])=>`<button data-nkind="${k}" aria-pressed="${noteKind===k}">${v.short}</button>`).join('')}</div>
-    <button class="btn write" data-note="new">${ic('chat')}メモを書く</button>
     ${body}
     <div class="note">「共有する」は参加者全員に、「共有しない」は自分だけに表示されます。</div>
   </div>`;
@@ -1664,22 +2046,152 @@ function wx(code){
   if(code===0) return ['快晴','sun']; if(code<=2) return ['晴れ','cloudsun']; if(code===3) return ['くもり','cloud'];
   if(code<=48) return ['霧','fog']; if(code<=67||(code>=80&&code<=82)) return ['雨','rain']; if(code<=77) return ['雪','rain']; return ['雷雨','storm'];
 }
+/* 日ごとの天気（2日目は鹿児島と熊本の両方） */
+const DAY_WX=[[['鹿児島','kagoshima']],[['鹿児島','kagoshima'],['熊本','kumamoto']],[['熊本','kumamoto']]];
+function wxOf(di,key){const d=DAYS[di]&&DAYS[di].date; return WEATHER&&(WEATHER[key]||[]).find(x=>x.date===d);}
 function renderWeather(){
   const el=document.getElementById('weather'); if(!el) return;
-  if(!WEATHER||!WEATHER.kagoshima){el.innerHTML='';return;}
-  const cols=[['2026-10-08','鹿児島','kagoshima'],['2026-10-09','熊本','kumamoto'],['2026-10-10','熊本','kumamoto']];
+  if(!WEATHER||!WEATHER.kagoshima){el.innerHTML=HAS_GAS?noticeEntry():'';return;}
+  /* 3日分を1段で。押した日の詳しい予報が開く（2日目は鹿児島の予報を表示し、詳細では熊本も） */
   const today=fmtDateKey(nowMin());
-  el.innerHTML=`<div class="wxcard">${cols.map(([d,city,key])=>{
-    const w=(WEATHER[key]||[]).find(x=>x.date===d); if(!w) return '';
-    const [lab,icn]=wx(w.code); const dd=+d.slice(8), wd=['木','金','土'][dd-8]||'';
-    return `<div class="wxcol${d===today?' today':''}" title="${lab}" aria-label="10/${dd} ${city} ${lab} 最高${w.max}度 最低${w.min}度 降水確率${w.rain==null?'不明':w.rain+'%'}">
-      <div class="wxd">10/${dd}<span>${city}</span></div>
-      <div class="wxm">${ic(icn,'i wxi')}<span class="num wxt"><b>${w.max}</b>/${w.min}°</span><span class="wxr">${ic('umbrella')}${w.rain==null?'-':w.rain}%</span></div></div>`;}).join('')}</div>`;
+  const cols=DAYS.map((d,di)=>{const [city,key]=(DAY_WX[di]||[])[0]||[]; const w=key&&wxOf(di,key); if(!w) return '';
+    const [lab,icn]=wx(w.code), dd=+d.date.slice(8);
+    return `<button class="wxcol${d.date===today?' today':''}" data-wx="${di}" aria-label="10/${dd} ${city} ${lab} 最高${w.max}度 最低${w.min}度 降水確率${w.rain==null?'不明':w.rain+'%'}。押すと詳しい予報">
+      <div class="wxd">10/${dd}<span>${city}</span><span class="wxr num">${ic('umbrella')}${w.rain==null?'-':w.rain}%</span></div>
+      <div class="wxm">${ic(icn,'i wxi')}<span class="num wxt"><b>${w.max}</b>/${w.min}°</span><span class="wxgo2">${ic('chevron')}</span></div></button>`;}).join('');
+  el.innerHTML=(HAS_GAS?noticeEntry():'')+`<div class="wxcard">${cols}</div>`;
+}
+let SPOT_OPEN=''; /* 上部カードで開いている見どころ（自動更新しても閉じないように） */
+function spotInfo(it,fold){
+  const inf=infoOf(it); if(!inf) return '';
+  if(fold){
+    const k=kOf(it), li=x=>{const m=x.match(/^(写真|実用)：(.*)$/); return m?`<li class="tag"><span class="tg">${m[1]}</span>${esc(m[2])}</li>`:`<li>${esc(x)}</li>`;};
+    return `<details class="spotinfo fold" data-spot="${k}"${SPOT_OPEN===k?' open':''}><summary>${ic('sight')}見どころ<span class="sc num">${inf.length}</span></summary><ul>${inf.map(li).join('')}</ul></details>`;
+  }
+  const li=x=>{const m=x.match(/^(写真|実用)：(.*)$/); return m?`<li class="tag"><span class="tg">${m[1]}</span>${esc(m[2])}</li>`:`<li>${esc(x)}</li>`;};
+  return `<div class="spotinfo"><div class="sih">${ic('sight')}見どころ</div><ul>${inf.map(li).join('')}</ul></div>`;
+}
+/* ---------- 今日のルート地図 ---------- */
+let MAP=null, MAPLAYER=null, MAPDAY=-1, MEPOS=null;
+function renderMap(){
+  const wrap=document.getElementById('daymap-wrap'); if(!wrap) return;
+  if(typeof L==='undefined'){wrap.style.display='none';return;}
+  wrap.style.display='';
+  const on=S.mapOn!==false;
+  document.getElementById('mapt').innerHTML=(on?ic('x'):ic('map'))+(on?'地図を隠す':'今日のルートを地図で見る');
+  document.getElementById('mapt').setAttribute('aria-expanded',String(on));
+  document.getElementById('locate').innerHTML=on?ic('pin')+'現在地':'';
+  const el=document.getElementById('daymap'); el.style.display=on?'':'none';
+  if(!on) return;
+  /* 画面にまだ出ていない（鍵の画面の裏・別のタブ）ときは描かない。大きさ0で描くと位置がずれる */
+  if(!el.offsetWidth||!el.offsetHeight){MAPDAY=-1;return;}
+  const st=status(), d=DAYS[S.day];
+  /* その日の行程（九州の中だけ。飛行機は除く） */
+  const seen={};
+  const uniq=d.items.filter(it=>!isOff(it)&&it.k!=='flight').map(it=>({it,p:posOf(it),di:it.di}))
+    .filter(o=>o.p&&o.p[0]<34).filter(o=>{const k=o.p.join(',');if(seen[k])return false;seen[k]=1;return true;});
+  if(!MAP){
+    MAP=L.map(el,{zoomControl:false,attributionControl:true,scrollWheelZoom:false,tap:true});
+    L.tileLayer('https:'+'/'+'/tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap'}).addTo(MAP);
+    L.control.zoom({position:'bottomright'}).addTo(MAP);
+    MAPLAYER=L.layerGroup().addTo(MAP);
+  }
+  MAPLAYER.clearLayers();
+  if(uniq.length>1) L.polyline(uniq.map(o=>o.p),{color:'#0f5248',weight:3,opacity:.6,dashArray:'7 6'}).addTo(MAPLAYER);
+  uniq.forEach((o,i)=>{
+    const it=o.it, n=nowMin();
+    const cls=st.cur===it?'now':st.nx===it?'next':(n>=endOf(it)?'done':'');
+    const icon=L.divIcon({className:'mk '+cls,html:`<span>${i+1}</span>`,iconSize:[26,26],iconAnchor:[13,13]});
+    L.marker(o.p,{icon,title:it.title}).addTo(MAPLAYER).bindPopup(`<b>${esc(it.title)}</b><br>${DAYS[o.di].label}　${tS(it)}${it.e?'〜'+tE(it):''}`);
+  });
+  if(MEPOS) L.circleMarker(MEPOS,{radius:7,color:'#fff',weight:2,fillColor:'#b06f00',fillOpacity:1}).addTo(MAPLAYER).bindPopup('現在地');
+  MAP.invalidateSize();
+  if(MAPDAY!==S.day&&uniq.length){ MAP.fitBounds(L.latLngBounds(uniq.map(o=>o.p)),{padding:[28,28],maxZoom:14}); MAPDAY=S.day; }
+}
+function locateMe(){
+  if(!navigator.geolocation){toast('この端末では現在地を使えません','err');return;}
+  navigator.geolocation.getCurrentPosition(p=>{MEPOS=[p.coords.latitude,p.coords.longitude];renderMap();MAP&&MAP.setView(MEPOS,Math.max(MAP.getZoom(),12));},
+    ()=>toast('現在地を取得できませんでした。位置情報の許可を確認してください','err'),{enableHighAccuracy:true,timeout:10000});
+}
+/* ---------- 旅のコラム（ボタンだけ置いて、押したら読める） ---------- */
+const COLUMNS=[
+  {t:'桜島と灰のある暮らし',b:['鹿児島のシンボル桜島は、今も噴火を繰り返す活火山です。もともと島でしたが、1914年の大正噴火で流れ出た溶岩が海峡を埋め、大隅半島と陸続きになりました。','市街地では、風向きによって火山灰が降ります。鹿児島市は毎日の天気予報で「桜島上空の風向き」を伝え、灰は「克灰袋」という専用の袋に入れて回収します。','洗濯物を外に干せるかどうかは風向き次第。灰が降る日は、車のフロントガラスにうっすら積もることもあります。']},
+  {t:'薩摩の芋焼酎',b:['鹿児島は焼酎の県。桜島の火山灰土「シラス」は水はけがよく、米より芋づくりに向いていたことから、さつまいもの焼酎が広まりました。','飲み方の定番は「お湯割り」。先にお湯、あとから焼酎を注ぐと、自然に混ざってまろやかになると言われます。','鹿児島で「お酒」と言えば焼酎のこと。日本酒は「清酒」と区別して呼ぶ人も多いそうです。']},
+  {t:'知覧とお茶',b:['知覧は武家屋敷と特攻の歴史で知られますが、お茶どころでもあります。鹿児島県は静岡県と並ぶお茶の産地で、知覧茶はその代表格です。','温暖な気候のおかげで、全国でもいちばん早く新茶が出回る地域のひとつ。深蒸しで、濃い緑色とまろやかな味が特徴です。','武家屋敷の庭園を見学したあと、縁側でいただく一杯は格別です。']},
+  {t:'西郷さんと鹿児島',b:['鹿児島で「西郷さん」と言えば、もちろん西郷隆盛。明治維新の立役者で、今も地元の人に親しまれています。','上野の像は着流しに犬を連れた姿ですが、鹿児島市の像は軍服姿。市内のあちこちに、ゆかりの地があります。','仙巌園を築いた島津家と、西郷さんを生んだ下級武士の家々。同じ鹿児島でも、まったく違う世界が隣り合っていました。']},
+  {t:'加藤清正と熊本城',b:['熊本城を築いたのは加藤清正。築城の名人として知られ、下に行くほどゆるやかで上に行くほど垂直に近づく「武者返し」の石垣が有名です。','2016年の熊本地震では、石垣や櫓が大きな被害を受けました。天守閣は2021年に復旧しましたが、城全体の復旧はこれから何十年もかかる計画です。','熊本の人は清正を「せいしょこさん」と呼び、今も親しんでいます。']},
+  {t:'馬刺しとからし蓮根',b:['熊本の名物といえば馬刺し。熊本は馬肉の生産量が全国一で、赤身、霜降り、たてがみ（こうね）など部位ごとに味わいが違います。','からし蓮根は、蓮根の穴に辛子味噌を詰めて揚げたもの。病弱だった熊本藩主・細川忠利のために、滋養食として考えられたと伝わります。','どちらもお土産にできますが、馬刺しは冷凍、からし蓮根は日持ちが短いので、買うタイミングに注意です。']},
+  {t:'くまモンのこと',b:['熊本県のPRキャラクター、くまモン。2010年に九州新幹線の全線開業に合わせて生まれました。','熊本県内の企業なら、くまモンのイラストを無料で使えるのが大きな特徴。だから、熊本に来るとあちこちにくまモンがいます。','熊本空港はくまモングッズの宝庫。最後のお土産探しにどうぞ。']},
+  {t:'鹿児島弁・熊本弁ひとこと',b:['【鹿児島弁】だれやめ＝晩酌／わっぜ＝とても（「わっぜうまか」）／おやっとさぁ＝おつかれさま／よかにせ＝いい男／あいがとさげもした＝ありがとうございました','【熊本弁】あとぜき＝開けた戸は閉めること／たいぎゃ＝とても（「たいぎゃうまか」）／むしゃんよか＝かっこいい／ばってん＝だけど／のさん＝しんどい','現地の人に一言使ってみると、会話がはずむかもしれません。']}
+];
+/* 日程の一番下：アルバムとコラムの小さなボタン */
+function extrasTiles(){
+  const photo=ALBUM?`<a class="exbtn" href="${esc(ALBUM)}" target="_blank" rel="noopener">${ic('photo')}<span>みんなの写真</span></a>`:'';
+  const col=`<button class="exbtn" data-columns>${ic('note')}<span>旅のコラム</span></button>`;
+  return `<div class="extras${ALBUM?'':' one'}">${photo}${col}</div>`;
+}
+function columnBar(){
+  return `<button class="colbar" data-columns>${ic('note')}<b>旅のコラム</b><span>桜島の灰、焼酎、西郷さん、熊本城、馬刺し…　${COLUMNS.length}本</span>${ic('chevron')}</button>`;
+}
+function openColumns(){
+  const body=COLUMNS.map((c,i)=>`<details class="colitem" name="col"><summary><span class="cn num">${i+1}</span>${esc(c.t)}</summary>${c.b.map(p=>`<p>${esc(p)}</p>`).join('')}</details>`).join('');
+  openInfoSheet('旅のコラム',body+'<div class="note">旅の合間の話のネタに。内容は一般に知られている事柄をもとにしています。</div>');
 }
 function albumBar(){
   if(!ALBUM) return '';
   return `<a class="albumbar" href="${esc(ALBUM)}" target="_blank" rel="noopener">${ic('photo')}<b>共有アルバム</b><span>写真はここに追加</span>${ic('link')}</a>`;
 }
+/* 服装の目安（気温・雨・風・紫外線から） */
+function dressTips(w,city,dd){
+  const t=[];
+  if(w.max>=27) t.push('日中は半袖で十分。冷房の効いたバスや店内用に薄い羽織りを');
+  else if(w.max>=23) t.push('長袖シャツ1枚か、半袖＋薄手の羽織り');
+  else if(w.max>=18) t.push('長袖に、カーディガンや薄手のジャケット');
+  else t.push('ニットやジャケットなど、しっかりした上着');
+  if(w.min<=15) t.push(`朝晩は${w.min}°まで下がります。上着を1枚`);
+  else if(w.max-w.min>=8) t.push('朝晩と日中の差が大きいので、脱ぎ着しやすい服で');
+  if(w.rain>=50) t.push('雨の可能性が高め。折りたたみ傘と、濡れても困らない靴を');
+  else if(w.rain>=30) t.push('にわか雨に備えて折りたたみ傘を');
+  if(w.wind!=null&&w.wind>=8) t.push('風が強め。帽子は飛ばされやすいので注意');
+  if(w.uv!=null&&w.uv>=6) t.push('日差しが強め。日焼け止め・帽子・サングラスがあると安心');
+  if(dd===8) t.push('桜島・有村溶岩展望所では火山灰が舞うことがあります。マスクやメガネがあると安心');
+  if(dd===9) t.push('知覧・仙巌園は屋外を歩く時間が長め。歩きやすい靴で');
+  if(dd===10) t.push('熊本城・水前寺は坂や砂利道があります。歩きやすい靴で');
+  return t;
+}
+function openWeather(di){
+  if(!WEATHER) return;
+  di=di==null?(S.day||0):di;
+  const cols=(DAY_WX[di]||[]).map(([city,key])=>[DAYS[di].date,city,key]);
+  const today=fmtDateKey(nowMin());
+  const body=cols.map(([d,city,key])=>{
+    const w=(WEATHER[key]||[]).find(x=>x.date===d); if(!w) return '';
+    const [lab,icn]=wx(w.code); const dd=+d.slice(8), wd=['木','金','土'][dd-8]||'';
+    const hours=(w.hours||[]).map(o=>{const [hl,hi]=wx(o.code);return `<div class="wxh"><span>${o.h}時</span>${ic(hi,'i')}<b class="num">${o.temp}°</b><span class="wxhr">${o.rain==null?'':o.rain+'%'}</span></div>`;}).join('');
+    return `<section class="wxday${d===today?' today':''}">
+      <div class="wxdh">${ic(icn,'i wxbig')}<div><div class="wxdt">10/${dd}（${wd}）${city}</div><div class="wxds">${lab}</div></div>
+        <div class="wxdtemp num"><b>${w.max}°</b><span>${w.min}°</span></div></div>
+      <div class="wxstats">
+        <div><span>体感</span><b class="num">${w.feelMax!=null?w.feelMax+'° / '+w.feelMin+'°':'-'}</b></div>
+        <div><span>降水確率</span><b class="num">${w.rain==null?'-':w.rain+'%'}${w.mm?' ・'+w.mm+'mm':''}</b></div>
+        <div><span>風（最大）</span><b class="num">${w.wind!=null?w.wind+' m/s':'-'}</b></div>
+        <div><span>紫外線</span><b class="num">${w.uv!=null?w.uv:'-'}</b></div>
+        <div><span>日の出・日の入り</span><b class="num">${w.sunrise||'-'} ・ ${w.sunset||'-'}</b></div>
+      </div>
+      ${hours?`<div class="wxhours">${hours}</div>`:''}
+      <div class="wxdress"><div class="wxdl">${ic('shirt')}服装の目安</div><ul>${dressTips(w,city,dd).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
+      <a class="link" href="https:${'/'+'/'}www.google.com/search?q=${encodeURIComponent((city==='鹿児島'?'鹿児島市':'熊本市')+' 天気 10月'+dd+'日')}" target="_blank" rel="noopener">${city}の天気をくわしく調べる</a>
+    </section>`;}).join('');
+  openInfoSheet(DAYS[di].label+'の天気と服装の目安',body+`<div class="note">予報は変わることがあります。出発前日にもう一度確認してください。</div>`);
+}
+function openInfoSheet(title,html){
+  const sh=document.getElementById('wxsheet');
+  document.getElementById('wxsheet-t').textContent=title;
+  document.getElementById('wxsheet-b').innerHTML=html;
+  sh.classList.add('on'); document.body.classList.add('sheetOpen');
+  sh.querySelector('.bd').scrollTop=0;
+}
+function closeWeather(){document.getElementById('wxsheet').classList.remove('on');document.body.classList.remove('sheetOpen');}
 function fmtDateKey(m){const d=new Date(m*60000);return d.toISOString().slice(0,10);}
 
 /* ---------- マイページ ---------- */
@@ -1721,7 +2233,8 @@ function renderMy(){
     </div>
     <div class="note">この端末だけの設定です。iPhoneの「設定 → アクセシビリティ」で動きを減らしている場合は、自動で動きを止めます。</div>
   </details>
-  <button class="btn write" data-note="new" data-shared="0">${ic('chat')}メモを書く</button>
+  <button class="btn write solid" data-note="new" data-shared="0">${ic('edit')}自分だけのメモを書く</button>
+
   <div class="blk"><h3>自分だけのメモ</h3>
     ${priv.map(noteCard).join('')||'<div class="empty" style="padding:4px 4px 0;text-align:left">「共有しない」にして書いたメモがここに並びます。</div>'}
   </div>
@@ -1763,7 +2276,7 @@ function renderAll(){
 
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-refresh],[data-tab],[data-day],[data-toggle],[data-start],[data-pack],[data-packdel],[data-packreset],[data-sim],[data-clear],[data-gotoken],[data-packadd],[data-view-size],[data-view-toggle],[data-delayopen],[data-delayset],[data-delaycancel],[data-scene],[data-note],[data-want],[data-vis],[data-kind],[data-nkind],[data-vis],[data-meetedit],[data-meetq],[data-meetsave],[data-meetdel],[data-meetcancel]');
+  const t=e.target.closest('[data-refresh],[data-tab],[data-day],[data-toggle],[data-start],[data-pack],[data-packdel],[data-packreset],[data-sim],[data-clear],[data-noticehide],[data-noticeedit],[data-columns],[data-mapt],[data-locate],[data-dia],[data-wx],[data-wxclose],[data-gotoken],[data-packadd],[data-view-size],[data-view-toggle],[data-delayopen],[data-delayset],[data-delaycancel],[data-scene],[data-note],[data-want],[data-vis],[data-kind],[data-nkind],[data-vis],[data-meetedit],[data-meetq],[data-meetsave],[data-meetdel],[data-meetcancel]');
   if(!t) return;
   const ds=t.dataset;
   if(ds.tab){if(ds.tab!==S.tab&&editMeet){if(!(await confirmDiscard()))return;renderSheet();renderNotes();}
@@ -1778,7 +2291,7 @@ document.addEventListener('click',async e=>{
   }
   else if('refresh' in ds){manualPull();}
   else if(ds.day){S.day=+ds.day;openKey=null;save();renderDays();}
-  else if(ds.toggle){openKey=openKey===ds.toggle?null:ds.toggle;renderDays();}
+  else if(ds.toggle){openKey=openKey===ds.toggle?null:ds.toggle;renderDays();if(openKey) setTimeout(()=>reveal(document.querySelector('#daybody .it.open')),60);}
   else if(ds.start){S.start=ds.start;save();renderInfo();renderMy();renderHero();renderDays();}
   else if(ds.packdel!=null){const p=S.pack[+ds.packdel];S.pack.splice(+ds.packdel,1);delete S.packOk[p];save();renderPack();}
   else if(ds.pack!=null){const p=S.pack[+ds.pack];S.packOk[p]=!S.packOk[p];save();renderPack();}
@@ -1844,6 +2357,13 @@ document.addEventListener('click',async e=>{
   else if(ds.viewToggle){const k=ds.viewToggle;S.view[k]=!S.view[k];save();applyView();renderMy();}
   else if(ds.packadd){if(!S.pack.includes(ds.packadd)){S.pack.push(ds.packadd);save();renderPack();toast('「'+ds.packadd+'」を足しました');}}
   else if('gotoken' in ds){if(!goTokenUrl()) toast('アドレスを切り替えられませんでした','err');}
+  else if(ds.wx!=null&&ds.wx!==''){openWeather(+ds.wx);}
+  else if('wxclose' in ds){closeWeather();}
+  else if('mapt' in ds){S.mapOn=S.mapOn===false;save();renderMap();}
+  else if('locate' in ds){locateMe();}
+  else if('columns' in ds){openColumns();}
+  else if('noticeedit' in ds){editNotice();}
+  else if('noticehide' in ds){try{localStorage.setItem(KEY+'-notice-hid',NOTICE.text+'|'+NOTICE.until);}catch(_){} renderHero();}
   else if(ds.sim){
     if(ds.sim==='set'){const v=document.getElementById('simin').value; if(/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(v)) SIM=toMin(v.slice(0,10),v.slice(11,16));}
     else SIM=null;
@@ -1906,6 +2426,7 @@ document.getElementById('sheet').addEventListener('click',async e=>{
   if(e.target.id!=='sheet') return;
   if(!(await confirmDiscard())) return; renderSheet();
 });
+document.getElementById('wxsheet').addEventListener('click',e=>{if(e.target.id==='wxsheet') closeWeather();});
 document.getElementById('topbar').addEventListener('click',()=>window.scrollTo({top:0,behavior:SB()}));
 (function(){
   const ptr=document.getElementById('ptr'); let y0=null,pull=0;
