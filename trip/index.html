@@ -1469,6 +1469,13 @@ document.body.classList.toggle('locked',HAS_GAS&&!window.__PREVIEW);
   document.body.classList.toggle('standalone',sa);
 })();
 if(!HAS_GAS||window.__PREVIEW) document.getElementById('gate').classList.remove('checking');
+/* 画面だけの置き場所（GitHubなど）で、つなぎ先（config.js）が読めていない */
+if(!HAS_GAS&&!window.__PREVIEW&&/^https?:$/.test(location.protocol)){
+  document.body.classList.add('locked');
+  const g=document.getElementById('gate'); g.classList.remove('pin','setup','checking');
+  document.getElementById('gate-t').textContent='設定ファイルが読み込めません';
+  document.getElementById('gate-m').textContent='幹事の方へ：GitHubの trip フォルダに config.js があり、中にGASの /exec のURLが書かれているか確認してください。';
+}
 function ensureName(){
   if(ME.email) return true;
   if(!HAS_GAS){ /* プレビュー用 */
@@ -1487,7 +1494,7 @@ function pull(force){
     if(r.session&&r.session!==TOKEN){TOKEN=r.session;try{localStorage.setItem(KEY+'-token',TOKEN);}catch(_){}
       /* 名前とパスワードで入った直後：アドレスを「入力なしで開ける形」に切り替える（ホーム画面に追加しても覚えたまま） */
       if(HAS_RUN&&META_TOKEN!==TOKEN) setTimeout(goTokenUrl,400);
-    } ROSTER=r.members||[]; CONTACTS=r.contacts||[]; renderMember(); renderInfo(); gotMe(r.me);gotMeet(r.meet);gotDelays(r.delays);gotNotes(r.notes);WEATHER=r.weather||null;ALBUM=r.albumUrl||'';NOTICE=r.notice||null;renderWeather();if(!isTypingIn('#t-info'))renderInfo();migrateLocal();if(S.tab==='notes'){markNotesSeen();}renderNav();renderHero();if(!isTypingIn('#daybody'))renderDays();if(!isTypingIn('#t-notes,#t-my'))renderNotes();})
+    } ROSTER=r.members||[]; CONTACTS=r.contacts||[]; renderMember(); renderInfo(); gotMe(r.me);gotMeet(r.meet);gotDelays(r.delays);gotNotes(r.notes);const albChanged=ALBUM!==(r.albumUrl||'');WEATHER=r.weather||null;ALBUM=r.albumUrl||'';NOTICE=r.notice||null;renderWeather();if(albChanged&&!editMeet)renderDays();if(!isTypingIn('#t-info'))renderInfo();migrateLocal();if(S.tab==='notes'){markNotesSeen();}renderNav();renderHero();if(!isTypingIn('#daybody'))renderDays();if(!isTypingIn('#t-notes,#t-my'))renderNotes();})
     .catch(()=>{SYNC.ok=false;renderHero();if(AUTH==='checking'){document.getElementById('gate').classList.remove('checking');document.getElementById('gate-t').textContent='つながりません';document.getElementById('gate-m').textContent='電波のよい場所で開き直してください。';}}).finally(()=>{SYNC.busy=false;});
 }
 function migrateLocal(){
@@ -1850,7 +1857,7 @@ function renderInfo(){
      ${map?`<a class="ic" href="${mapUrl(map)}" target="_blank" rel="noopener" aria-label="Googleマップで開く">${ic('pin')}</a>`:''}
      ${tel?`<a class="ic" href="${telUrl(tel)}" data-name="${esc(t.replace(/<[^>]+>/g,''))}" data-num="${tel}" aria-label="電話 ${tel}">${ic('phone')}</a>`:''}</div>`;
   document.getElementById('t-info').innerHTML=`
-  ${HAS_GAS&&!window.__PREVIEW?'':`<div class="blk"><h3>時刻を指定して表示を確認（プレビュー用）</h3>
+  ${!window.__PREVIEW?'':`<div class="blk"><h3>時刻を指定して表示を確認（プレビュー用）</h3>
     <div class="sim"><input type="datetime-local" id="simin" min="2026-10-08T05:00" max="2026-10-10T19:00" value="${SIM!=null?new Date(SIM*60000).toISOString().slice(0,16):'2026-10-08T14:30'}">
     <button class="btn" data-sim="set">この時刻で見る</button>${SIM!=null?'<button class="btn" data-sim="clear">今の時刻に戻す</button>':''}</div>
     <div class="note">旅行前に、当日どう表示されるかを試せます。開き直すと今の時刻に戻ります。本番のアプリにはこの欄はありません。</div>
