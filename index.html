@@ -1002,6 +1002,63 @@ div.wxcard{padding-right:0}
 #daymap-wrap.full #daymap{order:1;flex:1;height:auto;border-radius:0;border-left:0;border-right:0}
 body.mapFull{overflow:hidden}
 body.mapFull nav,body.mapFull #fab,body.mapFull #topbar{display:none!important}
+
+/* ================= タイムテーブル（時刻｜丸アイコン｜白いカード） ================= */
+.tl{margin-top:10px}
+.it,.via{grid-template-columns:66px 40px 1fr}
+.it .time{padding:16px 8px 0 0;text-align:right;line-height:1.1;white-space:nowrap}
+.it .time .s{font-size:18px;font-weight:800;letter-spacing:-.02em}
+.it .time .e{display:block;font-size:12.5px;color:var(--muted);font-weight:700;margin-top:3px}
+/* 縦の線と丸アイコン */
+.it .node{width:40px}
+.it .node::before{left:19px;border-left:2px solid #d8dcd2}
+.tl > :first-child .node::before{top:22px}
+.tl > :last-child .node::before{height:22px}
+.it .node i{left:3px;top:10px;width:34px;height:34px;border:0;border-radius:50%;display:grid;place-items:center;background:var(--ink);color:#fff;box-shadow:0 0 0 3px var(--bg)}
+.it .node i svg{width:17px;height:17px;stroke-width:2}
+.it.k-gather .node i{background:var(--sea)}
+.it.k-meal .node i{background:#c4800f}
+.it.k-spot .node i{background:#8a6a2b}
+.it.k-hotel .node i{background:#4f5648}
+.it.k-stop .node i,.it.k-rest .node i{background:#7b8174}
+.it.k-flight .node i,.it.k-ferry .node i{background:var(--ink)}
+.it.now .node i{box-shadow:0 0 0 3px var(--bg),0 0 0 6px rgba(196,128,15,.45)}
+.it.off .node i{background:var(--bg);color:var(--muted);border:1.5px dashed #b9bfb1}
+/* 白いカード（中身を開くとカードの中に広がる） */
+.it .body{margin:4px 0 12px 6px;padding:0;background:#fff;border-radius:16px;box-shadow:0 1px 3px rgba(20,24,20,.07),0 0 0 1px rgba(20,24,20,.05);overflow:hidden;min-width:0}
+.it .card{position:relative;padding:12px 40px 12px 14px;border-radius:0;background:transparent!important}
+.it .kind{gap:6px;font-size:12px;font-weight:900;color:var(--muted)}
+.it .kind .kl{letter-spacing:.02em}
+.it.k-gather .kind .kl{color:var(--sea)}
+.it.k-meal .kind .kl{color:#b06f00}
+.it.k-spot .kind .kl{color:#8a6a2b}
+.it .ttl{font-size:17px;margin-top:2px;line-height:1.4}
+.it .sub{font-size:13.5px;margin-top:1px;line-height:1.5}
+.it .badge{margin-left:auto;font-size:11.5px;font-weight:900;padding:2px 9px;border-radius:999px;letter-spacing:.06em;line-height:1.5}
+.it .badge.now{background:#b06f00;color:#fff}
+.it .badge.next{background:var(--ink);color:#fff}
+.it .badge.off{background:transparent;color:var(--muted);padding-right:0}
+.it .chev{position:absolute;right:12px;bottom:12px;color:#a7ad9f;display:grid;place-items:center;transition:transform .15s}
+.it .chev svg{width:16px;height:16px;transform:rotate(90deg)}
+.it.open .chev{transform:rotate(180deg)}
+.it .detail{padding:0 14px 12px;border-top:1px solid var(--line);margin-top:0}
+.it.open .detail{padding-top:10px}
+/* いま・つぎ・済み・別ルート */
+.it.now .body{box-shadow:0 0 0 2.5px var(--ink),0 4px 12px rgba(20,24,20,.12)}
+.it.now .card{background:transparent!important}
+.it.nexti .body{box-shadow:0 0 0 1.5px var(--sea),0 2px 8px rgba(15,82,72,.12)}
+.it.nexti .card{background:transparent!important}
+.it.done .body{opacity:.6}
+.it.done .card{opacity:1}
+.it.off{opacity:1}
+.it.off .body{background:transparent;box-shadow:none;border:1.5px dashed #c7ccbf}
+.it.off .ttl,.it.off .sub,.it.off .time{opacity:.75}
+/* 移動（バス・徒歩など）の行 */
+.via{min-height:34px}
+.via .rail{border-left:2px dashed #cdd2c6;justify-self:center}
+.via .lbl{padding-left:12px;font-size:13px;font-weight:700}
+.via .lbl svg{width:16px;height:16px}
+@media (max-width:360px){.it,.via{grid-template-columns:58px 36px 1fr}.it .node{width:36px}.it .node::before{left:17px}.it .node i{width:30px;height:30px}.it .time .s{font-size:17px}}
 </style>
 </head>
 <body class="locked">
@@ -1254,8 +1311,12 @@ let A11Y_OPEN=false, MEM_OPEN=false;
 function reveal(el){
   if(!el) return;
   const box=el.closest('.bd')||null;
-  const vh=box?box.clientHeight:(window.innerHeight-(document.querySelector('nav')?.offsetHeight||0));
-  const top0=box?box.getBoundingClientRect().top:0;
+  /* 画面の上に貼りついている帯（つぎの帯・日付タブ）の下からを見える範囲とする */
+  let stick=0;
+  if(!box) document.querySelectorAll('#days,#mini,.minibar,.stickybar').forEach(s=>{const cs=getComputedStyle(s);if(cs.position==='sticky'||cs.position==='fixed'){const r=s.getBoundingClientRect();if(r.top<=2&&r.bottom>0)stick=Math.max(stick,r.bottom);}});
+  if(!box){const dz=document.getElementById('days');if(dz){const cs=getComputedStyle(dz);if(cs.position==='sticky')stick=Math.max(stick,parseFloat(cs.top||0)+dz.offsetHeight);}}
+  const vh=box?box.clientHeight:(window.innerHeight-(document.querySelector('nav')?.offsetHeight||0)-stick);
+  const top0=box?box.getBoundingClientRect().top:stick;
   const r=el.getBoundingClientRect(), h=r.height, top=r.top-top0;
   let delta;
   if(h<=vh-24) delta=top-(vh-h)/2;     /* 収まる：中央に */
@@ -1839,16 +1900,17 @@ function renderDays(){
     const st=isOff(it)?' off':(cs===it?' now':(nxs===it?' nexti':(n>=endOf(it)?' done':'')));
     const mt=meetOf(it);
     const openNow=openKey===key||editMeet===key;
-    h+=`<li class="it${st}${openNow?' open':''}" data-key="${key}">
+    h+=`<li class="it k-${it.k}${st}${openNow?' open':''}" data-key="${key}">
       <div class="time num"><span class="s"${it.shift?` style="color:${it.shift>0?'var(--lava)':'var(--sea)'}"`:''}>${tS(it)}</span>${it.e?`<span class="e">${tE(it)}</span>`:''}${planTag(it)}</div>
-      <div class="node"><i></i></div>
+      <div class="node"><i>${ic(ki)}</i></div>
       <div class="body">
         <button class="card" data-toggle="${key}" aria-expanded="${openNow}">
-          <span class="kind">${ic(ki)}${kl}${st===' now'?'<span class="nowtag">いまここ</span>':''}${st===' nexti'?'<span class="nowtag" style="color:var(--sea)">つぎ</span>':''}${isOff(it)?'<span class="nowtag" style="color:var(--muted)">別の集合ルート</span>':''}</span>
+          <span class="kind"><span class="kl">${kl}</span>${st===' now'?'<span class="badge now">いまここ</span>':''}${st===' nexti'?'<span class="badge next">つぎ</span>':''}${isOff(it)?'<span class="badge off">別ルート</span>':''}</span>
           <span class="ttl" style="display:block">${esc(it.title)}</span>
           ${it.sub?`<span class="sub" style="display:block">${esc(it.sub)}</span>`:''}
           ${mt?`<span class="meetline">${ic('flag')}集合 ${mt.t||''}${mt.p?'　'+esc(mt.p):''}</span>`:''}
           ${memo?`<span class="hasmemo">${ic('note')}${esc(memo.split('\n')[0].slice(0,24))}</span>`:''}
+          <span class="chev" aria-hidden="true">${ic('chevron')}</span>
         </button>
         <div class="detail">
           ${spotInfo(it)}<div style="margin:2px 0 10px">${linksHtml(it)}</div>
