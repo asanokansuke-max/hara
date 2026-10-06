@@ -12,6 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
+<meta name="app-version" content="10/06 13:00">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1059,6 +1060,44 @@ body.mapFull nav,body.mapFull #fab,body.mapFull #topbar{display:none!important}
 .via .lbl{padding-left:12px;font-size:13px;font-weight:700}
 .via .lbl svg{width:16px;height:16px}
 @media (max-width:360px){.it,.via{grid-template-columns:58px 36px 1fr}.it .node{width:36px}.it .node::before{left:17px}.it .node i{width:30px;height:30px}.it .time .s{font-size:17px}}
+
+.appver{text-align:center;font-size:11.5px;color:var(--muted);margin:18px 0 6px}
+
+/* カードを開いたとき：見どころとタイトルの間を詰める */
+.it .detail{border-top:1px solid #eceee8}
+.it.open .detail{padding-top:8px}
+.it .detail .spotinfo{margin:0 0 4px;padding:0;background:transparent;border:0}
+.it .detail .spotinfo .sih{margin:0}
+.it .detail .spotinfo ul{margin-top:2px}
+
+.it .detail .dlab{margin:10px 0 4px!important}
+.it .detail .dlab+*{margin-top:0}
+.it .detail .meetcard,.it .detail .meetbtn{margin-top:0}
+
+/* 自分だけのメモ：見出し・入力欄・下の余白を詰める */
+.it .detail textarea{display:block;margin:0;min-height:64px}
+.it .detail .saved{min-height:0;margin:3px 0 0;font-size:12px}
+.it .detail .saved:empty{display:none}
+.it.open .detail{padding-bottom:12px}
+
+/* 地図の見た目 */
+#daymap{background:#eef0ea}
+#daymap .leaflet-tile-pane{filter:saturate(.85) contrast(.97)}
+.mk span{width:28px;height:28px;font-size:13.5px;border-width:2.5px;box-shadow:0 2px 6px rgba(20,24,20,.25)}
+.mk.done span{background:#f3f4ef;border-color:#9aa093;color:#7b8174;opacity:1}
+.mklabel{background:#fff;border:0;border-radius:8px;box-shadow:0 2px 8px rgba(20,24,20,.18);padding:3px 8px;font:800 12.5px/1.4 inherit;color:var(--ink);white-space:nowrap}
+.mklabel b{font-size:11px;margin-right:5px}
+.mklabel.now b{color:#b06f00}
+.mklabel.next b{color:var(--sea)}
+.mklabel::before{display:none}
+.leaflet-control-zoom{border:0!important;box-shadow:0 2px 8px rgba(20,24,20,.18)!important;border-radius:10px!important;overflow:hidden}
+.leaflet-control-zoom a{width:34px!important;height:34px!important;line-height:34px!important;color:var(--ink)!important}
+#daymap:not(.big) .leaflet-control-zoom{display:none}
+#daymap-wrap.full .leaflet-control-zoom{display:block}
+.leaflet-control-attribution{font-size:10px;background:rgba(255,255,255,.75)!important}
+
+.leaflet-tooltip-left.mklabel{margin-left:-18px}
+.leaflet-tooltip-right.mklabel{margin-left:18px}
 </style>
 </head>
 <body class="locked">
@@ -2180,17 +2219,28 @@ function renderMap(){
     .filter(o=>o.p&&o.p[0]<34).filter(o=>{const k=o.p.join(',');if(seen[k])return false;seen[k]=1;return true;});
   if(!MAP){
     MAP=L.map(el,{zoomControl:false,attributionControl:true,scrollWheelZoom:false,tap:true});
-    L.tileLayer('https:'+'/'+'/tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:18,attribution:'&copy; OpenStreetMap'}).addTo(MAP);
+    L.tileLayer('https:'+'/'+'/cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',{maxZoom:18,attribution:'<a href="https:'+'/'+'/maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener">国土地理院</a>'}).addTo(MAP);
     L.control.zoom({position:'bottomright'}).addTo(MAP);
+    MAP.attributionControl.setPrefix(false);
     MAPLAYER=L.layerGroup().addTo(MAP);
   }
   MAPLAYER.clearLayers();
-  if(uniq.length>1) L.polyline(uniq.map(o=>o.p),{color:'#0f5248',weight:3,opacity:.6,dashArray:'7 6'}).addTo(MAPLAYER);
+  if(uniq.length>1){
+    const ci=uniq.findIndex(o=>o.it===st.cur||o.it===st.nx);
+    const cut=ci<0?(nowMin()>=endOf(uniq[uniq.length-1].it)?uniq.length-1:0):Math.max(0,uniq.findIndex(o=>o.it===st.cur)>=0?ci:ci-1);
+    const past=uniq.slice(0,cut+1).map(o=>o.p), rest=uniq.slice(cut).map(o=>o.p);
+    const draw=(pts,col,op,dash)=>{ if(pts.length<2) return;
+      L.polyline(pts,{color:'#fff',weight:8,opacity:.9,lineCap:'round',lineJoin:'round'}).addTo(MAPLAYER);
+      L.polyline(pts,{color:col,weight:4,opacity:op,lineCap:'round',lineJoin:'round',dashArray:dash||null}).addTo(MAPLAYER); };
+    draw(past,'#9aa093',.9,'1 8');
+    draw(rest,'#0f5248',.9,null);
+  }
   uniq.forEach((o,i)=>{
     const it=o.it, n=nowMin();
     const cls=st.cur===it?'now':st.nx===it?'next':(n>=endOf(it)?'done':'');
     const icon=L.divIcon({className:'mk '+cls,html:`<span>${i+1}</span>`,iconSize:[26,26],iconAnchor:[13,13]});
-    L.marker(o.p,{icon,title:it.title}).addTo(MAPLAYER).bindPopup(`<b>${esc(it.title)}</b><br>${DAYS[o.di].label}　${tS(it)}${it.e?'〜'+tE(it):''}`);
+    const mk=L.marker(o.p,{icon,title:it.title,zIndexOffset:cls==='now'?1000:cls==='next'?900:0}).addTo(MAPLAYER).bindPopup(`<b>${esc(it.title)}</b><br>${DAYS[o.di].label}　${tS(it)}${it.e?'〜'+tE(it):''}`);
+    if(cls==='now'||cls==='next') mk.bindTooltip(`<b>${cls==='now'?'いま':'つぎ'}</b>${esc(it.title.replace(/\s*(集合|フェリーターミナル)$/,''))}`,{permanent:true,direction:'auto',offset:[0,0],className:'mklabel '+cls});
   });
   if(MEPOS) L.circleMarker(MEPOS,{radius:7,color:'#fff',weight:2,fillColor:'#b06f00',fillOpacity:1}).addTo(MAPLAYER).bindPopup('現在地');
   MAP.invalidateSize();
@@ -2337,6 +2387,7 @@ function renderMy(){
   ${posted.length?`<div class="blk"><h3>自分がみんなに共有したメモ</h3>${posted.map(noteCard).join('')}</div>`:''}
   ${pm?`<div class="blk"><h3>日程に書いたメモ</h3>${pm}</div>`:''}
   <div class="blk"><h3>持ち物</h3><div id="packbox"></div></div>
+  <div class="appver">しおりの版：${((document.querySelector('meta[name="app-version"]')||{}).content||'-').replace(/^__.*__$/,'-')}</div>
   ${MY_SETTINGS()}`;
   renderPack();
 }
