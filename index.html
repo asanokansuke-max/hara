@@ -988,7 +988,20 @@ div.wxcard{padding-right:0}
 .pastnotes .note-card{opacity:.75}
 
 .maphead .mapr{display:inline-flex;gap:14px;align-items:center}
-.maphead #gmap{text-decoration:none}
+
+/* 地図の全画面 */
+.mapfullbar{display:none}
+#daymap-wrap.full{position:fixed;inset:0;z-index:40;margin:0;background:var(--bg);display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+#daymap-wrap.full .maphead{order:2;margin:8px 14px;justify-content:flex-end}
+#daymap-wrap.full .maphead [data-mapt],#daymap-wrap.full #mapfull{display:none}
+#daymap-wrap.full .mapfullbar{display:flex;order:0;align-items:center;gap:10px;padding:10px 8px 8px 16px;font-size:16px}
+#daymap-wrap.full .mapfullbar b{flex:1;font-weight:900}
+#daymap-wrap.full .mfx{width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:var(--paper);border:1px solid var(--line)}
+#daymap-wrap.full .mfx svg{width:20px;height:20px}
+#daymap-wrap.full #daymap{order:1;flex:1;height:auto;border-radius:0;border-left:0;border-right:0}
+body.mapFull{overflow:hidden}
+body.mapFull nav,body.mapFull #fab,body.mapFull #topbar{display:none!important}
 </style>
 </head>
 <body class="locked">
@@ -998,7 +1011,7 @@ div.wxcard{padding-right:0}
   <section class="tab on" id="t-plan">
     <div id="weather"></div>
     <div class="days" role="tablist" id="days"></div>
-    <div id="daymap-wrap"><div class="maphead"><button class="link" data-mapt aria-expanded="true" id="mapt"></button><span class="mapr"><a class="link" id="gmap" target="_blank" rel="noopener"></a><button class="link" data-locate id="locate"></button></span></div><div id="daymap" aria-label="今日のルート地図"></div></div>
+    <div id="daymap-wrap"><div class="maphead"><button class="link" data-mapt aria-expanded="true" id="mapt"></button><span class="mapr"><button class="link" data-mapfull id="mapfull"></button><button class="link" data-locate id="locate"></button></span></div><div class="mapfullbar"><b id="mapfull-t"></b><button class="mfx" data-mapfull aria-label="全画面を閉じる"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div><div id="daymap" aria-label="今日のルート地図"></div></div>
     <div id="daybody"></div>
   </section>
 
@@ -1117,6 +1130,7 @@ const P={
   shirt:'<path d="M8 3 3.5 6l2 4L8 9v12h8V9l2.5 1 2-4L16 3a4 4 0 0 1-8 0z"/>',
   edit:'<path d="M4 20h4l10.5-10.5a2.1 2.1 0 0 0-3-3L5 17z"/><path d="M13.5 7.5l3 3"/>',
   wifi:'<path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.3" r="1.1"/><path d="M3 3l18 18"/>',
+  expand:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
   note:'<path d="M5 4h10l4 4v12H5zM15 4v4h4M8 12h8M8 15.5h5"/>'
 };
 const ic=(n,c='i')=>`<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
@@ -2091,7 +2105,8 @@ function renderMap(){
   document.getElementById('mapt').innerHTML=(on?ic('x'):ic('map'))+(on?'地図を隠す':'今日のルートを地図で見る');
   document.getElementById('mapt').setAttribute('aria-expanded',String(on));
   document.getElementById('locate').innerHTML=on?ic('pin')+'現在地':'';
-  const gm=document.getElementById('gmap'); gm.innerHTML=''; gm.removeAttribute('href');
+  document.getElementById('mapfull').innerHTML=on?ic('expand')+'全画面':'';
+  document.getElementById('mapfull-t').textContent=DAYS[S.day].label+'のルート';
   const el=document.getElementById('daymap'); el.style.display=on?'':'none';
   if(!on) return;
   /* 画面にまだ出ていない（鍵の画面の裏・別のタブ）ときは描かない。大きさ0で描くと位置がずれる */
@@ -2116,15 +2131,15 @@ function renderMap(){
     L.marker(o.p,{icon,title:it.title}).addTo(MAPLAYER).bindPopup(`<b>${esc(it.title)}</b><br>${DAYS[o.di].label}　${tS(it)}${it.e?'〜'+tE(it):''}`);
   });
   if(MEPOS) L.circleMarker(MEPOS,{radius:7,color:'#fff',weight:2,fillColor:'#b06f00',fillOpacity:1}).addTo(MAPLAYER).bindPopup('現在地');
-  /* その日のルートをGoogleマップで開くリンク（出発地→経由地→最後の行き先） */
-  if(uniq.length>1){
-    const ll=o=>o.p[0].toFixed(5)+','+o.p[1].toFixed(5);
-    let mid=uniq.slice(1,-1); if(mid.length>8){const s=(mid.length-1)/7; mid=Array.from({length:8},(_,i)=>mid[Math.round(i*s)]);}
-    const u='https:'+'/'+'/www.google.com/maps/dir/?api=1&travelmode=driving&origin='+ll(uniq[0])+'&destination='+ll(uniq[uniq.length-1])+(mid.length?'&waypoints='+encodeURIComponent(mid.map(ll).join('|')):'');
-    gm.href=u; gm.innerHTML=ic('map')+'Googleマップ';
-  }
   MAP.invalidateSize();
   if(MAPDAY!==S.day&&uniq.length){ MAP.fitBounds(L.latLngBounds(uniq.map(o=>o.p)),{padding:[28,28],maxZoom:14}); MAPDAY=S.day; }
+}
+/* 地図の全画面表示（iPhoneでも使えるよう、画面いっぱいに広げる方式） */
+function toggleMapFull(force){
+  const w=document.getElementById('daymap-wrap'); if(!w) return;
+  const on=force!=null?force:!w.classList.contains('full');
+  w.classList.toggle('full',on); document.body.classList.toggle('mapFull',on);
+  setTimeout(()=>{ if(!MAP) return; MAP.invalidateSize(); MAPDAY=-1; renderMap(); },60);
 }
 function locateMe(){
   if(!navigator.geolocation){toast('この端末では現在地を使えません','err');return;}
@@ -2294,7 +2309,7 @@ function renderAll(){
 
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-refresh],[data-tab],[data-day],[data-toggle],[data-start],[data-pack],[data-packdel],[data-packreset],[data-sim],[data-clear],[data-noticehide],[data-noticeedit],[data-columns],[data-mapt],[data-locate],[data-dia],[data-wx],[data-wxclose],[data-gotoken],[data-packadd],[data-view-size],[data-view-toggle],[data-delayopen],[data-delayset],[data-delaycancel],[data-scene],[data-note],[data-want],[data-vis],[data-kind],[data-nkind],[data-vis],[data-meetedit],[data-meetq],[data-meetsave],[data-meetdel],[data-meetcancel]');
+  const t=e.target.closest('[data-refresh],[data-tab],[data-day],[data-toggle],[data-start],[data-pack],[data-packdel],[data-packreset],[data-sim],[data-clear],[data-mapfull],[data-noticehide],[data-noticeedit],[data-columns],[data-mapt],[data-locate],[data-dia],[data-wx],[data-wxclose],[data-gotoken],[data-packadd],[data-view-size],[data-view-toggle],[data-delayopen],[data-delayset],[data-delaycancel],[data-scene],[data-note],[data-want],[data-vis],[data-kind],[data-nkind],[data-vis],[data-meetedit],[data-meetq],[data-meetsave],[data-meetdel],[data-meetcancel]');
   if(!t) return;
   const ds=t.dataset;
   if(ds.tab){if(ds.tab!==S.tab&&editMeet){if(!(await confirmDiscard()))return;renderSheet();renderNotes();}
@@ -2378,6 +2393,7 @@ document.addEventListener('click',async e=>{
   else if(ds.wx!=null&&ds.wx!==''){openWeather(+ds.wx);}
   else if('wxclose' in ds){closeWeather();}
   else if('mapt' in ds){S.mapOn=S.mapOn===false;save();renderMap();}
+  else if('mapfull' in ds){toggleMapFull();}
   else if('locate' in ds){locateMe();}
   else if('columns' in ds){openColumns();}
   else if('noticeedit' in ds){editNotice();}
@@ -2444,6 +2460,7 @@ document.getElementById('sheet').addEventListener('click',async e=>{
   if(e.target.id!=='sheet') return;
   if(!(await confirmDiscard())) return; renderSheet();
 });
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('mapFull')) toggleMapFull(false);});
 document.getElementById('wxsheet').addEventListener('click',e=>{if(e.target.id==='wxsheet') closeWeather();});
 document.getElementById('topbar').addEventListener('click',()=>window.scrollTo({top:0,behavior:SB()}));
 (function(){
