@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/07 22:07">
+<meta name="app-version" content="10/07 22:11">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1952,7 +1952,9 @@ async function openPdf(id){
       doc=await lib.getDocument({url:pdfUrl(id),disableWorker:true}).promise;
     }
     if(tk!==PV.token) return;
-    PV.doc=doc; PV.id=id;
+    PV.doc=doc; PV.id=id; PV.size='';
+    /* 確認用：実際に読み込んだPDFの大きさ（GitHubのファイルが新しいかどうかの目印） */
+    doc.getDownloadInfo().then(i=>{ if(tk===PV.token&&i&&i.length){ PV.size=(i.length/1e6).toFixed(1)+'MB'; showPdfPage(); } }).catch(()=>{});
     await layoutPdf();
     /* 保存用に、読み込んだデータをそのままファイルにしておく（押した瞬間に保存画面を出すため） */
     doc.getData().then(d=>{ if(tk!==PV.token) return; PV.file=new File([d],pamOf(id).t.replace(/[\\/:*?"<>|]/g,'')+'.pdf',{type:'application/pdf'}); setSaveLabel('保存する',false); }).catch(()=>setSaveLabel('保存する',false));
@@ -2017,7 +2019,7 @@ function showPdfPage(){
   const b=document.getElementById('pdfv-b'); if(!PV.doc) return;
   const pgs=[...b.querySelectorAll('.pv-pg')]; const mid=b.scrollTop+b.clientHeight/3;
   let n=1; for(const d of pgs){ if(d.offsetTop<=mid) n=+d.dataset.n; else break; }
-  document.getElementById('pdfv-p').textContent=n+' / '+PV.doc.numPages+' ページ';
+  document.getElementById('pdfv-p').textContent=n+' / '+PV.doc.numPages+' ページ'+(PV.size?'・'+PV.size:'');
 }
 function setSaveLabel(t,busy){ const l=document.getElementById('pdfv-save-l'); if(l) l.textContent=t; const bt=document.getElementById('pdfv-out'); if(bt) bt.classList.toggle('wait',!!busy); }
 /* 保存：スマホは「共有」の画面から「ファイルに保存」などを選ぶ。共有できない端末はそのままダウンロード */
