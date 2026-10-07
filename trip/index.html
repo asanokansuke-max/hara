@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/07 15:12">
+<meta name="app-version" content="10/07 16:27">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1264,6 +1264,17 @@ body.calm .it.now .node i{animation:none}
 .pv-why{display:block;margin-top:14px;font-size:11px;font-weight:400;opacity:.7;word-break:break-all}
 
 .wxcard .wxph{font-size:11.5px;font-weight:800;color:var(--ink);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.02em}
+
+/* 2つ並ぶ天気マーク */
+.wxic2{display:inline-flex;align-items:center;gap:1px;flex:none}
+.wxic2 .wxsep{font-style:normal;font-size:11px;color:var(--muted);font-weight:800;margin:0 1px}
+.wxcard .wxic2 svg.wxsub{width:15px;height:15px;color:#2f6f8f}
+.wxdh .wxic2 svg.wxsub{width:28px;height:28px;color:#2f6f8f}
+.wxdh .wxic2 .wxsep{font-size:16px;margin:0 3px}
+
+.wxdh .wxic2 svg.wxbig{width:36px;height:36px;color:var(--sea)}
+.wxdh .wxic2 svg.wxsub{width:28px;height:28px}
+.wxdh .wxic2{margin-right:4px}
 </style>
 </head>
 <body class="locked">
@@ -2559,7 +2570,14 @@ function wxDay(w){
   const parts=ph.split(/のち|時々|一時/), a=parts[0], b=parts[1];
   let code=rep[a]; if(code==null) return wx(w.code);
   if(b&&/時々|一時/.test(ph)&&((a==='晴れ'&&b==='曇り')||(a==='曇り'&&b==='晴れ'))) code=2;   /* 晴れ時々曇り → 晴れときどき曇りのアイコン */
-  return [ph, wx(code)[1]];
+  /* 雨・雪・雷が混じる日は、そのマークも並べる（例：曇り時々雨 → 雲｜雨） */
+  const subCode=b&&rep[b]!=null&&/雨|雪/.test(b)?rep[b]:null;
+  return [ph, wx(code)[1], subCode!=null?wx(subCode)[1]:null, /のち/.test(ph)?'のち':/一時/.test(ph)?'一時':'時々'];
+}
+/* 天気アイコン（2つ目があれば小さく添える） */
+function wxIcons(w,cls){
+  const [,a,b,c]=wxDay(w);
+  return b?`<span class="wxic2">${ic(a,'i '+(cls||''))}<i class="wxsep">${c==='のち'?'›':'|'}</i>${ic(b,'i wxsub')}</span>`:ic(a,'i '+(cls||''));
 }
 function renderWeather(){
   const el=document.getElementById('weather'); if(!el) return;
@@ -2570,7 +2588,7 @@ function renderWeather(){
     const [lab,icn]=wxDay(w), dd=+d.date.slice(8);
     return `<button class="wxcol${d.date===today?' today':''}" data-wx="${di}" aria-label="10/${dd} ${city} ${lab} 最高${w.max}度 最低${w.min}度 降水確率${w.rain==null?'不明':w.rain+'%'}。押すと詳しい予報">
       <div class="wxd">10/${dd}<span>${city}</span><span class="wxr num">${ic('umbrella')}${w.rain==null?'-':w.rain}%</span></div>
-      <div class="wxm">${ic(icn,'i wxi')}<span class="num wxt"><b>${w.max}</b>/${w.min}°</span><span class="wxgo2">${ic('chevron')}</span></div><div class="wxph">${esc(lab)}</div></button>`;}).join('');
+      <div class="wxm">${wxIcons(w,'wxi')}<span class="num wxt"><b>${w.max}</b>/${w.min}°</span><span class="wxgo2">${ic('chevron')}</span></div><div class="wxph">${esc(lab)}</div></button>`;}).join('');
   el.innerHTML=(HAS_GAS?noticeEntry():'')+`<div class="wxcard">${cols}</div>`;
 }
 let SPOT_OPEN=''; /* 上部カードで開いている見どころ（自動更新しても閉じないように） */
@@ -2704,7 +2722,7 @@ function openWeather(di){
     const [lab,icn]=wxDay(w); const dd=+d.slice(8), wd=['木','金','土'][dd-8]||'';
     const hours=(w.hours||[]).map(o=>{const [hl,hi]=wx(o.code);return `<div class="wxh"><span>${o.h}時</span>${ic(hi,'i')}<b class="num">${o.temp}°</b><span class="wxhr">${o.rain==null?'':o.rain+'%'}</span></div>`;}).join('');
     return `<section class="wxday${d===today?' today':''}">
-      <div class="wxdh">${ic(icn,'i wxbig')}<div><div class="wxdt">10/${dd}（${wd}）${city}</div><div class="wxds">${lab}</div></div>
+      <div class="wxdh">${wxIcons(w,'wxbig')}<div><div class="wxdt">10/${dd}（${wd}）${city}</div><div class="wxds">${lab}</div></div>
         <div class="wxdtemp num"><b>${w.max}°</b><span>${w.min}°</span></div></div>
       <div class="wxstats">
         <div><span>体感</span><b class="num">${w.feelMax!=null?w.feelMax+'° / '+w.feelMin+'°':'-'}</b></div>
