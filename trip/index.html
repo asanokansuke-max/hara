@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/07 22:11">
+<meta name="app-version" content="10/07 22:16">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1284,6 +1284,10 @@ body.calm .it.now .node i{animation:none}
 
 .pv-link.sm{border-width:1.5px;background:rgba(224,138,0,.08)}
 .pv-link.sm span{display:none}
+
+.pv-bd.fitw{overflow-x:hidden;touch-action:pan-y}
+.pv-bd.fitw .pv-in{max-width:100%}
+.pv-bd.fitw .pv-pg{max-width:100%}
 </style>
 </head>
 <body class="locked">
@@ -1968,7 +1972,9 @@ async function openPdf(id){
 async function layoutPdf(){
   const b=document.getElementById('pdfv-b'), doc=PV.doc; if(!doc) return;
   if(PV.io) PV.io.disconnect();
-  const W=Math.floor(b.clientWidth*PV.zoom);   /* 横は画面の幅ぴったり */
+  /* 横は画面の幅ぴったり。100%のときは横に動かないようにする（拡大したときだけ横スクロール） */
+  b.classList.toggle('fitw',PV.zoom<=1.001); if(PV.zoom<=1.001) b.scrollLeft=0;
+  const W=Math.floor(b.clientWidth*PV.zoom);
   const first=await doc.getPage(1), vp0=first.getViewport({scale:1});
   b.innerHTML=''; const inner=document.createElement('div'); inner.className='pv-in'; inner.id='pdfv-in'; inner.style.width=W+'px';
   for(let i=1;i<=doc.numPages;i++){
