@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/07 09:43">
+<meta name="app-version" content="10/07 09:49">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1817,13 +1817,17 @@ const PDFJS_VER='3.11.174';
 let PDFJS=null, PV={doc:null,id:'',zoom:1,io:null,token:0};
 function loadPdfjs(){
   if(PDFJS) return PDFJS;
-  PDFJS=new Promise((ok,ng)=>{
-    const base='https:'+'/'+'/cdnjs.cloudflare.com/ajax/libs/pdf.js/'+PDFJS_VER+'/';
-    const s=document.createElement('script'); s.src=base+'pdf.min.js';
-    s.onload=()=>{ try{ window.pdfjsLib.GlobalWorkerOptions.workerSrc=base+'pdf.worker.min.js'; ok(window.pdfjsLib);}catch(e){ng(e);} };
-    s.onerror=()=>{PDFJS=null;ng(new Error('load'));};
+  /* 古めのスマホでも動く legacy 版を先に試し、読めなければ通常版 */
+  const cdn='https:'+'/'+'/cdnjs.cloudflare.com/ajax/libs/pdf.js/'+PDFJS_VER+'/';
+  const bases=[cdn+'legacy/build/',cdn];
+  const tryLoad=i=>new Promise((ok,ng)=>{
+    if(i>=bases.length){ng(new Error('load'));return;}
+    const s=document.createElement('script'); s.src=bases[i]+'pdf.min.js';
+    s.onload=()=>{ try{ window.pdfjsLib.GlobalWorkerOptions.workerSrc=bases[i]+'pdf.worker.min.js'; ok(window.pdfjsLib);}catch(e){ s.remove(); tryLoad(i+1).then(ok,ng);} };
+    s.onerror=()=>{ s.remove(); tryLoad(i+1).then(ok,ng); };
     document.head.appendChild(s);
   });
+  PDFJS=tryLoad(0).catch(e=>{PDFJS=null;throw e;});
   return PDFJS;
 }
 async function openPdf(id){
@@ -1862,15 +1866,23 @@ async function layoutPdf(){
     frag.appendChild(d);
   }
   b.appendChild(frag);
-  PV.io=new IntersectionObserver(es=>es.forEach(en=>{ if(en.isIntersecting) renderPdfPage(en.target,W); }),{root:b,rootMargin:'600px 0px'});
+  PV.io=new IntersectionObserver(es=>es.forEach(en=>{
+    if(en.isIntersecting) renderPdfPage(en.target,W);
+    else if(en.target.dataset.done){ /* 画面から遠いページは描画を捨ててメモリを空ける（iPhoneは画像の合計に上限がある） */
+      const c=en.target.querySelector('canvas'); if(c){c.width=0;c.height=0;} en.target.innerHTML=''; delete en.target.dataset.done; }
+  }),{root:b,rootMargin:'1200px 0px'});
   b.querySelectorAll('.pv-pg').forEach(d=>PV.io.observe(d));
   showPdfPage();
 }
 async function renderPdfPage(d,W){
   if(d.dataset.done) return; d.dataset.done='1';
   const tk=PV.token, page=await PV.doc.getPage(+d.dataset.n); if(tk!==PV.token) return;
-  const vp1=page.getViewport({scale:1}), dpr=Math.min(window.devicePixelRatio||1,2.5);
-  const sc=W/vp1.width, vp=page.getViewport({scale:sc*dpr});
+  const vp1=page.getViewport({scale:1});
+  const sc=W/vp1.width;
+  /* 1ページの画素数は約500万までに抑える（スマホで真っ白になるのを防ぐ） */
+  let dpr=Math.min(window.devicePixelRatio||1,2);
+  const px=(vp1.width*sc*dpr)*(vp1.height*sc*dpr); if(px>5e6) dpr*=Math.sqrt(5e6/px);
+  const vp=page.getViewport({scale:sc*dpr});
   d.style.height=Math.round(vp1.height*sc)+'px';
   const c=document.createElement('canvas'); c.width=Math.floor(vp.width); c.height=Math.floor(vp.height);
   c.style.width='100%'; c.style.height='100%';
