@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/07 09:34">
+<meta name="app-version" content="10/07 09:43">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1170,6 +1170,25 @@ body.mapFull nav,body.mapFull #fab,body.mapFull #topbar{display:none!important}
 .pamfold>.pamday:first-of-type{margin-top:6px}
 
 .pamfold .pamday>summary .pdn{color:var(--muted);font-weight:700}
+
+/* パンフレットのビューア */
+#pdfv{position:fixed;inset:0;z-index:60;background:#2b2f2a;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+#pdfv[hidden]{display:none}
+body.pdfOpen{overflow:hidden}
+.pv-hd{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--paper);border-bottom:1px solid var(--line)}
+.pv-close{display:inline-flex;align-items:center;gap:2px;height:40px;padding:0 14px 0 8px;border-radius:20px;background:var(--sea);color:#fff;font-weight:900;font-size:15px;flex:none}
+.pv-close svg{width:20px;height:20px;stroke-width:2.4}
+.pv-t{flex:1;min-width:0;font-weight:900;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pv-zoom{display:flex;align-items:center;gap:2px;flex:none}
+.pv-zoom button{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:20px;font-weight:700;line-height:1;color:var(--ink)}
+.pv-zoom span{min-width:42px;text-align:center;font-size:12px;font-weight:800;color:var(--muted)}
+.pv-bd{flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:8px;overscroll-behavior:contain}
+.pv-pg{margin:0 auto 8px;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.pv-pg canvas{display:block}
+.pv-msg{color:#fff;text-align:center;padding:60px 16px;font-weight:700;line-height:1.8}
+.pv-msg .btn{display:inline-flex;margin-top:12px}
+.pv-ft{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--paper);border-top:1px solid var(--line);font-size:12.5px;font-weight:800;color:var(--muted)}
+.pv-ft a{color:var(--sea);font-weight:900;text-decoration:none}
 </style>
 </head>
 <body class="locked">
@@ -1226,6 +1245,15 @@ body.mapFull nav,body.mapFull #fab,body.mapFull #topbar{display:none!important}
   <div class="hd"><div class="tt" id="wxsheet-t">天気と服装の目安</div><button class="x" data-wxclose aria-label="閉じる"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
   <div class="bd" id="wxsheet-b"></div>
 </div></div>
+<div id="pdfv" role="dialog" aria-modal="true" aria-labelledby="pdfv-t" hidden>
+  <div class="pv-hd">
+    <button class="pv-close" data-pdfclose aria-label="パンフレットを閉じる"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>閉じる</button>
+    <div class="pv-t" id="pdfv-t"></div>
+    <div class="pv-zoom"><button data-pdfzoom="-1" aria-label="小さく">−</button><span id="pdfv-z" class="num">100%</span><button data-pdfzoom="1" aria-label="大きく">＋</button></div>
+  </div>
+  <div class="pv-bd" id="pdfv-b"></div>
+  <div class="pv-ft"><span id="pdfv-p" class="num"></span><a id="pdfv-out" target="_blank" rel="noopener">別のアプリで開く</a></div>
+</div>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-t"><div class="dlgbox">
   <div class="tt" id="dlg-t"></div><div class="mm" id="dlg-m"></div>
@@ -1312,7 +1340,7 @@ const TEL={
 const KIND={gather:['集合','flag'],flight:['飛行機','plane'],spot:['見学','sight'],meal:['食事','meal'],hotel:['宿泊','bed'],ferry:['フェリー','ship'],rest:['休憩','rest'],stop:['立ち寄り','pin']};
 const VIA={bus:['バス','bus'],walk:['徒歩','walk'],ferry:['フェリー','ship'],flight:['飛行機','plane']};
 
-const URL={
+const SITE_URL={
   '小松空港':'https:\/\/www.komatsuairport.jp/','羽田空港第1ターミナル':'https:\/\/tokyo-haneda.com/','鹿児島空港':'https:\/\/www.koj-ab.co.jp/',
   '霧島神宮':'https:\/\/kirishimajingu.or.jp/','桜島港フェリーターミナル':'https:\/\/www.city.kagoshima.lg.jp/sakurajima-ferry/',
   '知覧特攻平和会館':'https:\/\/www.chiran-tokkou.jp/','仙巌園':'https:\/\/www.senganen.jp/','水前寺成趣園':'https:\/\/www.suizenji.or.jp/',
@@ -1781,18 +1809,110 @@ const SPOT_PAM=[['霧島神宮','kirishima-guide'],['桷志田','kirishima-guide
   ['青柳','kumamoto-gourmet'],['ダイワロイネットホテル熊本','kumamoto-gourmet'],['熊本空港','kumamoto-gourmet'],['鹿児島空港','kirishima-guide'],['鹿児島空港','kagoshima-specialties'],['知覧特攻','nansa-tour']];
 function pamsFor(it){if(/出発|集合/.test(it.title||''))return [];const s=(it.map||'')+' '+(it.title||''); const ids=[]; SPOT_PAM.forEach(([k,id])=>{if(s.includes(k)&&!ids.includes(id))ids.push(id);}); return ids.slice(0,2).map(pamOf).filter(Boolean);}
 function pamCard(p){
-  return `<a class="pamrow" href="${pdfUrl(p.id)}" target="_blank" rel="noopener">
+  return `<a class="pamrow" href="${pdfUrl(p.id)}" target="_blank" rel="noopener" data-pdf="${p.id}">
       <img src="${p.th}" alt="" loading="lazy"><span class="pr-t"><i>パンフレット・<span class="num">${p.p}</span>ページ</i><b>${esc(p.t)}</b><em>${esc(p.d)}</em></span>${ic('chevron')}</a>`;
 }
+/* ---------- パンフレットをしおりの中で開く（閉じるボタン付き） ---------- */
+const PDFJS_VER='3.11.174';
+let PDFJS=null, PV={doc:null,id:'',zoom:1,io:null,token:0};
+function loadPdfjs(){
+  if(PDFJS) return PDFJS;
+  PDFJS=new Promise((ok,ng)=>{
+    const base='https:'+'/'+'/cdnjs.cloudflare.com/ajax/libs/pdf.js/'+PDFJS_VER+'/';
+    const s=document.createElement('script'); s.src=base+'pdf.min.js';
+    s.onload=()=>{ try{ window.pdfjsLib.GlobalWorkerOptions.workerSrc=base+'pdf.worker.min.js'; ok(window.pdfjsLib);}catch(e){ng(e);} };
+    s.onerror=()=>{PDFJS=null;ng(new Error('load'));};
+    document.head.appendChild(s);
+  });
+  return PDFJS;
+}
+async function openPdf(id){
+  const p=pamOf(id); if(!p) return;
+  const v=document.getElementById('pdfv'), b=document.getElementById('pdfv-b');
+  document.getElementById('pdfv-t').textContent=p.t;
+  document.getElementById('pdfv-out').href=pdfUrl(id);
+  document.getElementById('pdfv-p').textContent='';
+  b.innerHTML='<div class="pv-msg">読み込み中…</div>'; b.scrollTop=0;
+  PV.zoom=1; document.getElementById('pdfv-z').textContent='100%';
+  v.hidden=false; document.body.classList.add('pdfOpen');
+  if(!b._sc){ b._sc=1; b.addEventListener('scroll',()=>requestAnimationFrame(showPdfPage),{passive:true}); }
+  /* スワイプで戻る・端末の戻るボタンでも閉じられるように */
+  if(!(history.state&&history.state.pdf)) history.pushState({pdf:1},'');
+  const tk=++PV.token;
+  try{
+    const lib=await loadPdfjs();
+    const doc=await lib.getDocument({url:pdfUrl(id)}).promise;
+    if(tk!==PV.token) return;
+    PV.doc=doc; PV.id=id;
+    await layoutPdf();
+  }catch(e){
+    if(tk!==PV.token) return;
+    b.innerHTML=`<div class="pv-msg">しおりの中で開けませんでした。<br><a class="btn" href="${pdfUrl(id)}" target="_blank" rel="noopener">別のアプリで開く</a></div>`;
+  }
+}
+async function layoutPdf(){
+  const b=document.getElementById('pdfv-b'), doc=PV.doc; if(!doc) return;
+  if(PV.io) PV.io.disconnect();
+  const W=Math.floor(b.clientWidth*PV.zoom)-16;
+  const first=await doc.getPage(1), vp0=first.getViewport({scale:1});
+  b.innerHTML=''; const frag=document.createDocumentFragment();
+  for(let i=1;i<=doc.numPages;i++){
+    const d=document.createElement('div'); d.className='pv-pg'; d.dataset.n=i;
+    d.style.width=W+'px'; d.style.height=Math.round(W*vp0.height/vp0.width)+'px';
+    frag.appendChild(d);
+  }
+  b.appendChild(frag);
+  PV.io=new IntersectionObserver(es=>es.forEach(en=>{ if(en.isIntersecting) renderPdfPage(en.target,W); }),{root:b,rootMargin:'600px 0px'});
+  b.querySelectorAll('.pv-pg').forEach(d=>PV.io.observe(d));
+  showPdfPage();
+}
+async function renderPdfPage(d,W){
+  if(d.dataset.done) return; d.dataset.done='1';
+  const tk=PV.token, page=await PV.doc.getPage(+d.dataset.n); if(tk!==PV.token) return;
+  const vp1=page.getViewport({scale:1}), dpr=Math.min(window.devicePixelRatio||1,2.5);
+  const sc=W/vp1.width, vp=page.getViewport({scale:sc*dpr});
+  d.style.height=Math.round(vp1.height*sc)+'px';
+  const c=document.createElement('canvas'); c.width=Math.floor(vp.width); c.height=Math.floor(vp.height);
+  c.style.width='100%'; c.style.height='100%';
+  await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+  if(tk===PV.token){ d.innerHTML=''; d.appendChild(c); }
+}
+function showPdfPage(){
+  const b=document.getElementById('pdfv-b'); if(!PV.doc) return;
+  const pgs=[...b.querySelectorAll('.pv-pg')]; const mid=b.scrollTop+b.clientHeight/3;
+  let n=1; for(const d of pgs){ if(d.offsetTop<=mid) n=+d.dataset.n; else break; }
+  document.getElementById('pdfv-p').textContent=n+' / '+PV.doc.numPages+' ページ';
+}
+function zoomPdf(dir){
+  const steps=[1,1.5,2,3]; let i=steps.indexOf(PV.zoom)+dir; i=Math.max(0,Math.min(steps.length-1,i));
+  if(steps[i]===PV.zoom) return;
+  const b=document.getElementById('pdfv-b'); const ratio=(b.scrollTop+b.clientHeight/2)/Math.max(1,b.scrollHeight);
+  PV.zoom=steps[i]; document.getElementById('pdfv-z').textContent=Math.round(PV.zoom*100)+'%';
+  layoutPdf().then(()=>{ b.scrollTop=ratio*b.scrollHeight-b.clientHeight/2; b.scrollLeft=(b.scrollWidth-b.clientWidth)/2; });
+}
+function closePdf(fromPop){
+  const v=document.getElementById('pdfv'); if(v.hidden) return;
+  v.hidden=true; document.body.classList.remove('pdfOpen');
+  PV.token++; if(PV.io) PV.io.disconnect(); if(PV.doc){try{PV.doc.destroy();}catch(_){}} PV.doc=null;
+  document.getElementById('pdfv-b').innerHTML='';
+  if(!fromPop&&history.state&&history.state.pdf) history.back();
+}
+window.addEventListener('popstate',()=>closePdf(true));
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closePdf(); });
+document.addEventListener('click',e=>{
+  const a=e.target.closest('a[data-pdf]'); if(a){ e.preventDefault(); openPdf(a.dataset.pdf); return; }
+  if(e.target.closest('[data-pdfclose]')){ closePdf(); return; }
+  const z=e.target.closest('[data-pdfzoom]'); if(z) zoomPdf(+z.dataset.pdfzoom);
+},true);
 function linksHtml(it,withMap=true){
   if(!it.map&&!it.q) return '';
-  const q=it.q||it.map, off=URL[it.map];
+  const q=it.q||it.map, off=SITE_URL[it.map];
   return `<div class="links">
     ${off?`<a class="btn" href="${off}" target="_blank" rel="noopener">${ic('globe')}公式サイト</a>`:''}
     <a class="btn" href="https:\/\/www.google.com/search?q=${encodeURIComponent(q)}" target="_blank" rel="noopener">${ic('search')}検索結果</a>
     ${withMap?`<a class="btn" href="${mapUrl(q)}" target="_blank" rel="noopener">${ic('pin')}Googleマップ</a>`:''}
     ${it.tel?`<a class="btn" href="${telUrl(it.tel)}" data-name="${esc(it.title)}" data-num="${it.tel}">${ic('phone')}電話</a>`:''}
-  </div>${pamsFor(it).length?`<div class="pamrows">${pamsFor(it).map(p=>`<a class="pamrow" href="${pdfUrl(p.id)}" target="_blank" rel="noopener">
+  </div>${pamsFor(it).length?`<div class="pamrows">${pamsFor(it).map(p=>`<a class="pamrow" href="${pdfUrl(p.id)}" target="_blank" rel="noopener" data-pdf="${p.id}">
       <img src="${p.th}" alt="" loading="lazy"><span class="pr-t"><i>パンフレット</i><b>${esc(p.t)}</b><em>${esc(p.d)}</em></span>${ic('chevron')}</a>`).join('')}</div>`:''}`;
 }
 /* 実際の集合時間（現地で言われた時刻）。入っていればそれを出発時刻として扱う */
