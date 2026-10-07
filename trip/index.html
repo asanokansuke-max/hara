@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/07 09:49">
+<meta name="app-version" content="10/07 10:07">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1189,6 +1189,16 @@ body.pdfOpen{overflow:hidden}
 .pv-msg .btn{display:inline-flex;margin-top:12px}
 .pv-ft{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--paper);border-top:1px solid var(--line);font-size:12.5px;font-weight:800;color:var(--muted)}
 .pv-ft a{color:var(--sea);font-weight:900;text-decoration:none}
+
+/* 「別のアプリで開く」を押しやすく */
+.pv-ft{padding:8px 10px 8px 14px}
+.pv-out{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 16px;border-radius:22px;background:#fff;border:1.5px solid var(--sea);color:var(--sea)!important;font-size:14px;font-weight:900;text-decoration:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+.pv-out svg{width:17px;height:17px}
+.pv-out:active,.pv-out.busy{background:var(--sea);color:#fff!important}
+
+body.pdfOpen #toast{z-index:70;bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+
+.pv-out.wait{opacity:.55}
 </style>
 </head>
 <body class="locked">
@@ -1252,7 +1262,7 @@ body.pdfOpen{overflow:hidden}
     <div class="pv-zoom"><button data-pdfzoom="-1" aria-label="小さく">−</button><span id="pdfv-z" class="num">100%</span><button data-pdfzoom="1" aria-label="大きく">＋</button></div>
   </div>
   <div class="pv-bd" id="pdfv-b"></div>
-  <div class="pv-ft"><span id="pdfv-p" class="num"></span><a id="pdfv-out" target="_blank" rel="noopener">別のアプリで開く</a></div>
+  <div class="pv-ft"><span id="pdfv-p" class="num"></span><button id="pdfv-out" class="pv-out" data-pdfsave><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 19h14"/></svg><span id="pdfv-save-l">保存する</span></button></div>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-t"><div class="dlgbox">
@@ -1834,7 +1844,7 @@ async function openPdf(id){
   const p=pamOf(id); if(!p) return;
   const v=document.getElementById('pdfv'), b=document.getElementById('pdfv-b');
   document.getElementById('pdfv-t').textContent=p.t;
-  document.getElementById('pdfv-out').href=pdfUrl(id);
+  PV.file=null; setSaveLabel('準備中…',true);
   document.getElementById('pdfv-p').textContent='';
   b.innerHTML='<div class="pv-msg">読み込み中…</div>'; b.scrollTop=0;
   PV.zoom=1; document.getElementById('pdfv-z').textContent='100%';
@@ -1849,9 +1859,12 @@ async function openPdf(id){
     if(tk!==PV.token) return;
     PV.doc=doc; PV.id=id;
     await layoutPdf();
+    /* 保存用に、読み込んだデータをそのままファイルにしておく（押した瞬間に保存画面を出すため） */
+    doc.getData().then(d=>{ if(tk!==PV.token) return; PV.file=new File([d],pamOf(id).t.replace(/[\\/:*?"<>|]/g,'')+'.pdf',{type:'application/pdf'}); setSaveLabel('保存する',false); }).catch(()=>setSaveLabel('保存する',false));
   }catch(e){
     if(tk!==PV.token) return;
-    b.innerHTML=`<div class="pv-msg">しおりの中で開けませんでした。<br><a class="btn" href="${pdfUrl(id)}" target="_blank" rel="noopener">別のアプリで開く</a></div>`;
+    setSaveLabel('保存する',false);
+    b.innerHTML=`<div class="pv-msg">しおりの中で開けませんでした。<br>電波のよいところで開き直すか、下の「保存する」を試してください。</div>`;
   }
 }
 async function layoutPdf(){
@@ -1895,6 +1908,21 @@ function showPdfPage(){
   let n=1; for(const d of pgs){ if(d.offsetTop<=mid) n=+d.dataset.n; else break; }
   document.getElementById('pdfv-p').textContent=n+' / '+PV.doc.numPages+' ページ';
 }
+function setSaveLabel(t,busy){ const l=document.getElementById('pdfv-save-l'); if(l) l.textContent=t; const bt=document.getElementById('pdfv-out'); if(bt) bt.classList.toggle('wait',!!busy); }
+/* 保存：スマホは「共有」の画面から「ファイルに保存」などを選ぶ。共有できない端末はそのままダウンロード */
+async function savePdf(){
+  const id=PV.id||'', p=pamOf(id)||{t:'パンフレット'};
+  let f=PV.file;
+  if(f&&navigator.canShare&&navigator.canShare({files:[f]})){
+    try{ await navigator.share({files:[f],title:p.t}); }catch(e){ if(e&&e.name!=='AbortError') toast('保存できませんでした','err'); }
+    return;
+  }
+  try{
+    if(!f){ toast('ダウンロードしています…'); const r=await fetch(pdfUrl(id)); if(!r.ok) throw 0; f=new File([await r.blob()],p.t+'.pdf',{type:'application/pdf'}); }
+    const u=URL.createObjectURL(f), a=document.createElement('a'); a.href=u; a.download=f.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(u),60000); toast('保存しました（ダウンロードを確認してください）');
+  }catch(e){ toast('保存できませんでした。電波を確認してください','err'); }
+}
 function zoomPdf(dir){
   const steps=[1,1.5,2,3]; let i=steps.indexOf(PV.zoom)+dir; i=Math.max(0,Math.min(steps.length-1,i));
   if(steps[i]===PV.zoom) return;
@@ -1912,6 +1940,7 @@ function closePdf(fromPop){
 window.addEventListener('popstate',()=>closePdf(true));
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closePdf(); });
 document.addEventListener('click',e=>{
+  if(e.target.closest('[data-pdfsave]')){ e.preventDefault(); if(PV.doc&&!PV.file){ toast('準備中です。少し待ってからもう一度押してください'); return; } savePdf(); return; }
   const a=e.target.closest('a[data-pdf]'); if(a){ e.preventDefault(); openPdf(a.dataset.pdf); return; }
   if(e.target.closest('[data-pdfclose]')){ closePdf(); return; }
   const z=e.target.closest('[data-pdfzoom]'); if(z) zoomPdf(+z.dataset.pdfzoom);
