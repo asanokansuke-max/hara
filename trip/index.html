@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/07 08:52">
+<meta name="app-version" content="10/07 09:01">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1116,6 +1116,44 @@ body.mapFull nav,body.mapFull #fab,body.mapFull #topbar{display:none!important}
 .pamfold>summary .pc{font-size:12px;color:var(--muted);font-weight:800}
 .pamfold>summary::after{content:"";width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin-left:auto;margin-top:-4px;transition:transform .15s}
 .pamfold[open]>summary::after{transform:rotate(-135deg);margin-top:4px}
+
+/* 予定カードの中のパンフレット：表紙つきで目立たせる */
+.pamrows{display:grid;gap:8px;margin:10px 0 2px}
+.pamrow{display:flex;align-items:center;gap:11px;padding:8px 10px 8px 8px;border-radius:12px;background:#fbf7ee;border:1px solid #e6dcc5;text-decoration:none;color:var(--ink)}
+.pamrow img{width:46px;height:58px;object-fit:cover;object-position:top;border-radius:4px;box-shadow:0 1px 3px rgba(20,24,20,.2);flex:none;background:#fff}
+.pamrow .pr-t{display:flex;flex-direction:column;min-width:0;flex:1}
+.pamrow i{font-style:normal;font-size:11px;font-weight:900;color:#b06f00;letter-spacing:.06em}
+.pamrow b{font-size:14.5px;font-weight:900;line-height:1.35}
+.pamrow em{font-style:normal;font-size:11.5px;color:var(--muted);font-weight:700;line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pamrow>svg{width:16px;height:16px;color:#b06f00;flex:none}
+.pamrow:active{background:#f3ecdc}
+
+.pamrows{grid-template-columns:minmax(0,1fr)}
+.pamrow{min-width:0;overflow:hidden}
+
+.pamfold .pamrows{margin:0}
+.pamfold .pamarea{margin:12px 2px 6px}
+
+/* 情報タブ：パンフレット置き場の入口（押せるカードに） */
+.pamfold>summary{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 10px;border-radius:14px;background:#fbf7ee;border:1px solid #e6dcc5;
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.pamfold>summary::after{display:none!important}
+.pamfold>summary:active{background:#f3ecdc}
+.pamfold .pf-covers{position:relative;width:70px;height:60px;flex:none}
+.pamfold .pf-covers img{position:absolute;top:2px;width:42px;height:56px;object-fit:cover;object-position:top;border-radius:4px;box-shadow:0 1px 4px rgba(20,24,20,.25);background:#fff}
+.pamfold .pf-covers img:nth-child(1){left:0;transform:rotate(-7deg)}
+.pamfold .pf-covers img:nth-child(2){left:14px;transform:rotate(1deg);z-index:1}
+.pamfold .pf-covers img:nth-child(3){left:28px;transform:rotate(7deg);z-index:2}
+.pamfold .pr-t{display:flex;flex-direction:column;min-width:0;flex:1}
+.pamfold .pr-t i{font-style:normal;font-size:11px;font-weight:900;color:#b06f00;letter-spacing:.06em}
+.pamfold .pr-t b{font-size:16px;font-weight:900;line-height:1.35}
+.pamfold .pr-t em{font-style:normal;font-size:11.5px;color:var(--muted);font-weight:700;line-height:1.4}
+.pamfold .pf-chev{color:#b06f00;display:grid;place-items:center;transition:transform .15s;flex:none}
+.pamfold .pf-chev svg{width:18px;height:18px;transform:rotate(90deg)}
+.pamfold[open] .pf-chev{transform:rotate(180deg)}
+
+.pamfold .pf-covers{margin-left:4px;width:74px}
+.pamfold>summary{padding-left:12px}
 </style>
 </head>
 <body class="locked">
@@ -1720,7 +1758,8 @@ const SPOT_PAM=[['熊本城','kumamoto-castle'],['城彩苑','kumamoto-castle'],
   ['青柳','kumamoto-gourmet'],['ダイワロイネットホテル熊本','kumamoto-gourmet'],['熊本空港','kumamoto-gourmet'],['鹿児島空港','kagoshima-specialties'],['知覧武家','kagoshima-guide-map']];
 function pamsFor(it){const s=(it.map||'')+' '+(it.title||''); const ids=[]; SPOT_PAM.forEach(([k,id])=>{if(s.includes(k)&&!ids.includes(id))ids.push(id);}); return ids.slice(0,2).map(pamOf).filter(Boolean);}
 function pamCard(p){
-  return `<a class="pam" href="${pdfUrl(p.id)}" target="_blank" rel="noopener"><img src="${p.th}" alt="" loading="lazy"><span class="pt">${esc(p.t)}</span><span class="pd">${esc(p.d)}</span><span class="pm num">${p.p}ページ・${p.size}</span></a>`;
+  return `<a class="pamrow" href="${pdfUrl(p.id)}" target="_blank" rel="noopener">
+      <img src="${p.th}" alt="" loading="lazy"><span class="pr-t"><i>パンフレット・<span class="num">${p.p}</span>ページ</i><b>${esc(p.t)}</b><em>${esc(p.d)}</em></span>${ic('chevron')}</a>`;
 }
 function linksHtml(it,withMap=true){
   if(!it.map&&!it.q) return '';
@@ -1730,8 +1769,8 @@ function linksHtml(it,withMap=true){
     <a class="btn" href="https:\/\/www.google.com/search?q=${encodeURIComponent(q)}" target="_blank" rel="noopener">${ic('search')}検索結果</a>
     ${withMap?`<a class="btn" href="${mapUrl(q)}" target="_blank" rel="noopener">${ic('pin')}Googleマップ</a>`:''}
     ${it.tel?`<a class="btn" href="${telUrl(it.tel)}" data-name="${esc(it.title)}" data-num="${it.tel}">${ic('phone')}電話</a>`:''}
-    ${pamsFor(it).map(p=>`<a class="btn pambtn" href="${pdfUrl(p.id)}" target="_blank" rel="noopener">${ic('book')}${esc(p.s)}（PDF）</a>`).join('')}
-  </div>`;
+  </div>${pamsFor(it).length?`<div class="pamrows">${pamsFor(it).map(p=>`<a class="pamrow" href="${pdfUrl(p.id)}" target="_blank" rel="noopener">
+      <img src="${p.th}" alt="" loading="lazy"><span class="pr-t"><i>パンフレット</i><b>${esc(p.t)}</b><em>${esc(p.d)}</em></span>${ic('chevron')}</a>`).join('')}</div>`:''}`;
 }
 /* 実際の集合時間（現地で言われた時刻）。入っていればそれを出発時刻として扱う */
 const kOf=it=>it.di+'-'+it.ii;
@@ -2016,8 +2055,11 @@ function renderInfo(){
   ${ALBUM?`<div class="blk"><h3>写真</h3>
     <a class="btn album" href="${esc(ALBUM)}" target="_blank" rel="noopener">${ic('photo')}共有アルバムを開く</a>
     <div class="note">撮った写真はここに追加してください。</div></div>`:''}
-  <div class="blk"><details class="pamfold"><summary><h3>パンフレット</h3><span class="pc num">${PAMPHLETS.length}冊</span></summary>
-    ${['鹿児島','知覧','熊本'].map(a=>`<div class="pamarea">${a}</div><div class="pamgrid">${PAMPHLETS.filter(p=>p.area===a).map(pamCard).join('')}</div>`).join('')}
+  <div class="blk"><details class="pamfold"><summary aria-label="パンフレット ${PAMPHLETS.length}冊を開く">
+      <span class="pf-covers" aria-hidden="true">${PAMPHLETS.filter((p,i)=>[0,4,7].includes(i)).map(p=>`<img src="${p.th}" alt="">`).join('')}</span>
+      <span class="pr-t"><i>観光マップ・グルメガイド</i><b>パンフレット　<span class="num">${PAMPHLETS.length}</span>冊</b><em>鹿児島・知覧・熊本</em></span>
+      <span class="pf-chev">${ic('chevron')}</span></summary>
+    ${['鹿児島','知覧','熊本'].map(a=>`<div class="pamarea">${a}</div><div class="pamrows">${PAMPHLETS.filter(p=>p.area===a).map(pamCard).join('')}</div>`).join('')}
     <div class="note">押すとPDFが開きます。観光協会などが配っているパンフレットです。</div></details></div>
   <div class="blk"><h3>連絡先</h3><div class="rows">
     ${CONTACTS.map(c=>row(c.label,c.tel+(c.note?'　'+c.note:''),c.tel)).join('')||'<div class="loading-s">読み込み中…</div>'}
