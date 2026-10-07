@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/07 14:25">
+<meta name="app-version" content="10/07 14:45">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1260,6 +1260,8 @@ body.calm .it.now .node i{animation:none}
 .mk.next span{background:var(--next)!important;border-color:var(--next)!important;color:#fff!important}
 .mklabel.now b{color:var(--now)!important}
 .mklabel.next b{color:var(--next)!important}
+
+.pv-why{display:block;margin-top:14px;font-size:11px;font-weight:400;opacity:.7;word-break:break-all}
 </style>
 </head>
 <body class="locked">
@@ -1888,13 +1890,14 @@ const PDFJS_VER='3.11.174';
 let PDFJS=null, PV={doc:null,id:'',zoom:1,io:null,token:0};
 function loadPdfjs(){
   if(PDFJS) return PDFJS;
-  /* 古めのスマホでも動く legacy 版を先に試し、読めなければ通常版 */
-  const cdn='https:'+'/'+'/cdnjs.cloudflare.com/ajax/libs/pdf.js/'+PDFJS_VER+'/';
-  const bases=[cdn+'legacy/build/',cdn];
+  /* 表示部品の読み込み先：①しおりと同じ場所（GitHubの trip/lib/）②jsDelivr ③cdnjs の順に試す */
+  const self=/github\.io$/.test(location.hostname)?'lib/':'https:'+'/'+'/asanokansuke-max.github.io/hara/trip/lib/';
+  const bases=[self,'https:'+'/'+'/cdn.jsdelivr.net/npm/pdfjs-dist@'+PDFJS_VER+'/legacy/build/','https:'+'/'+'/cdnjs.cloudflare.com/ajax/libs/pdf.js/'+PDFJS_VER+'/'];
   const tryLoad=i=>new Promise((ok,ng)=>{
-    if(i>=bases.length){ng(new Error('load'));return;}
+    if(i>=bases.length){ng(new Error('表示部品を読み込めませんでした'));return;}
+    if(window.pdfjsLib){ try{ delete window.pdfjsLib; }catch(_){ window.pdfjsLib=undefined; } }
     const s=document.createElement('script'); s.src=bases[i]+'pdf.min.js';
-    s.onload=()=>{ try{ window.pdfjsLib.GlobalWorkerOptions.workerSrc=bases[i]+'pdf.worker.min.js'; ok(window.pdfjsLib);}catch(e){ s.remove(); tryLoad(i+1).then(ok,ng);} };
+    s.onload=()=>{ try{ window.pdfjsLib.GlobalWorkerOptions.workerSrc=bases[i]+'pdf.worker.min.js'; PV.lib=bases[i]; ok(window.pdfjsLib);}catch(e){ s.remove(); tryLoad(i+1).then(ok,ng);} };
     s.onerror=()=>{ s.remove(); tryLoad(i+1).then(ok,ng); };
     document.head.appendChild(s);
   });
@@ -1916,7 +1919,14 @@ async function openPdf(id){
   const tk=++PV.token;
   try{
     const lib=await loadPdfjs();
-    const doc=await lib.getDocument({url:pdfUrl(id)}).promise;
+    let doc;
+    try{ doc=await lib.getDocument({url:pdfUrl(id)}).promise; }
+    catch(err){
+      /* PDFそのものが見つからないときは、そのまま知らせる */
+      if(err&&/Missing|404|Unexpected server response/i.test(String(err.message||err))) throw new Error('PDFが見つかりません（'+pdfUrl(id)+'）');
+      /* 表示部品側の問題なら、ワーカーなしでもう一度 */
+      doc=await lib.getDocument({url:pdfUrl(id),disableWorker:true}).promise;
+    }
     if(tk!==PV.token) return;
     PV.doc=doc; PV.id=id;
     await layoutPdf();
@@ -1925,7 +1935,8 @@ async function openPdf(id){
   }catch(e){
     if(tk!==PV.token) return;
     setSaveLabel('保存する',false);
-    b.innerHTML=`<div class="pv-msg">しおりの中で開けませんでした。<br>電波のよいところで開き直すか、下の「保存する」を試してください。</div>`;
+    const why=String((e&&(e.name||'')+' '+(e.message||''))||e).slice(0,140);
+    b.innerHTML=`<div class="pv-msg">しおりの中で開けませんでした。<br>電波のよいところで開き直すか、下の「保存する」を試してください。<small class="pv-why">${esc(why)}</small></div>`;
   }
 }
 async function layoutPdf(){
