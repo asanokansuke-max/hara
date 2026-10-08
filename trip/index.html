@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/07 22:16">
+<meta name="app-version" content="10/08 10:53">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1288,6 +1288,62 @@ body.calm .it.now .node i{animation:none}
 .pv-bd.fitw{overflow-x:hidden;touch-action:pan-y}
 .pv-bd.fitw .pv-in{max-width:100%}
 .pv-bd.fitw .pv-pg{max-width:100%}
+
+/* PDFを開いている間は後ろの画面を固定 */
+html.pvlock,html.pvlock body{overflow:hidden!important;overscroll-behavior:none}
+html.pvlock body{position:fixed;left:0;right:0;width:100%}
+#pdfv{overscroll-behavior:none;touch-action:none;width:100vw;max-width:100%;overflow:hidden}
+#pdfv .pv-bd{overscroll-behavior:contain}
+#pdfv .pv-bd:not(.fitw){touch-action:pan-x pan-y}
+#pdfv .pv-hd,#pdfv .pv-ft{touch-action:none}
+#pdfv .pv-hd>*{min-width:0}
+
+/* 点呼 */
+.roll{margin:10px 0 4px;display:grid;gap:8px}
+.rl-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border-radius:14px;background:var(--now,#e07b00);color:#fff;font-size:17px;font-weight:900;box-shadow:0 3px 10px rgba(224,123,0,.3)}
+.rl-btn svg{width:22px;height:22px;stroke-width:2.6}
+.rl-btn:active{transform:scale(.98)}
+.rl-me{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:#e4f4ee;color:var(--next,#0b7a5f);font-size:15px}
+.rl-me svg{width:20px;height:20px;stroke-width:2.6}
+.rl-me b{font-weight:900}.rl-me .num{font-weight:800}
+.rl-me .link{margin-left:auto;color:var(--muted);font-size:12.5px}
+.rl-cnt{display:flex;align-items:baseline;gap:5px;width:100%;padding:9px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);font-size:13px;font-weight:800;color:var(--muted);text-align:left}
+.rl-cnt b{font-size:20px;color:var(--ink)}
+.rl-cnt em{font-style:normal;margin-left:auto;color:var(--now,#e07b00);font-weight:900}
+.rl-cnt em.ok{color:var(--next,#0b7a5f)}
+.rl-cnt svg{width:15px;height:15px;align-self:center}
+.rl-sum{font-size:14px;font-weight:800;margin:4px 0 10px}.rl-sum b{font-size:24px}
+.rl-h{margin:14px 0 6px;font-size:13px;font-weight:900;color:var(--muted)}
+.rl-list{display:grid;gap:4px}
+.rl-row{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;background:#fff4e0;font-weight:800}
+.rl-row.ok{background:#fff;border:1px solid var(--line)}
+.rl-row .t{color:var(--muted);font-size:12.5px}
+.rl-row .link{margin-left:auto;font-size:12.5px}
+/* 搭乗券 */
+.bpbtn{display:flex;align-items:center;gap:7px;width:100%;justify-content:flex-start}
+.bpbtn span{margin-left:auto;font-size:12px;color:var(--muted);font-weight:700}
+.bpbtn.add{border-style:dashed}
+.bphero{display:grid;gap:6px;margin:8px 0 0}
+.bphero .bpbtn{background:#fff;border:1.5px solid var(--next,#0b7a5f);color:var(--next,#0b7a5f);font-weight:900;min-height:46px}
+.bpmy{display:grid;gap:8px;margin-bottom:8px}
+.bprow{display:flex;align-items:center;gap:10px;padding:8px;border-radius:12px;background:var(--paper);border:1px solid var(--line)}
+.bprow img{width:52px;height:52px;object-fit:contain;background:#fff;border-radius:6px;border:1px solid var(--line)}
+.bprow .bpm{flex:1;min-width:0;display:flex;flex-direction:column}
+.bprow .bpm b{font-size:14px;font-weight:900}.bprow .bpm span{font-size:12px;color:var(--muted);font-weight:700}
+#bpv{position:fixed;inset:0;z-index:65;background:#fff;display:flex;flex-direction:column;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+#bpv[hidden]{display:none}
+.bpv-hd{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line)}
+.bpv-tt{display:flex;flex-direction:column;min-width:0}.bpv-tt b{font-size:15px;font-weight:900}.bpv-tt span{font-size:12.5px;color:var(--muted);font-weight:700}
+.bpv-bd{flex:1;display:grid;place-items:center;padding:16px;overflow:auto;background:#fff}
+#bpv-img{max-width:100%;max-height:100%;display:block}
+#bpv-img.qr{width:min(88vw,62vh);height:auto;image-rendering:pixelated}
+.bpv-ft{padding:10px 14px 14px;text-align:center;font-size:13px;font-weight:800;color:var(--muted)}
+
+.bpadd2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.bpbig{flex-direction:column;justify-content:center;gap:4px;min-height:72px;font-size:14px;font-weight:900;border:1.5px solid var(--sea);color:var(--sea);background:#fff}
+.bpbig svg{width:26px;height:26px}
+
+.bpbig svg.i{width:26px;height:26px;stroke-width:1.9}
 </style>
 </head>
 <body class="locked">
@@ -1352,6 +1408,13 @@ body.calm .it.now .node i{animation:none}
   </div>
   <div class="pv-bd" id="pdfv-b"></div>
   <div class="pv-ft"><span id="pdfv-p" class="num"></span><button id="pdfv-out" class="pv-out" data-pdfsave><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 19h14"/></svg><span id="pdfv-save-l">保存する</span></button></div>
+</div>
+<input type="file" id="bpfile" accept="image/*" hidden>
+<input type="file" id="bpcam" accept="image/*" capture="environment" hidden>
+<div id="bpv" role="dialog" aria-modal="true" aria-labelledby="bpv-t" hidden>
+  <div class="bpv-hd"><button class="pv-close" data-bpclose aria-label="搭乗券を閉じる"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>閉じる</button><div class="bpv-tt"><b id="bpv-t"></b><span id="bpv-n"></span></div></div>
+  <div class="bpv-bd"><img id="bpv-img" alt="搭乗券のQRコード"></div>
+  <div class="bpv-ft">画面を最も明るくして、係員にお見せください</div>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
 <div id="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-t"><div class="dlgbox">
@@ -1427,6 +1490,8 @@ const P={
   wifi:'<path d="M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.3" r="1.1"/><path d="M3 3l18 18"/>',
   expand:'<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>',
   book:'<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5zM4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M8 7h8M8 10.5h6"/>',
+  qr:'<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4z"/><path d="M14 14h2v2h-2zM18 14h2M14 18h2M18 18h2v2M16 16h2v2"/>',
+  camera:'<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
   note:'<path d="M5 4h10l4 4v12H5zM15 4v4h4M8 12h8M8 15.5h5"/>'
 };
 const ic=(n,c='i')=>`<svg class="${c}" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
@@ -1523,6 +1588,7 @@ const infoOf=it=>SPOT_INFO[it.map]||SPOT_INFO[it.title]||null;
 
 
 let ROSTER=[]; /* 名簿は本人確認のあとにサーバーから受け取る */
+let ROLL={}, ROLL_MEM=[], ROLL_ON=null;   /* ROLL_ON：サーバーに点呼.gsがあるか（null=まだ不明、false=ない） */   /* 点呼：{キー:{名前:{t,by}}}、対象者 [{name,start}] */
 let CONTACTS=[];
 const DEFAULT_PACK=['健康保険証','財布・現金','スマホと充電器','モバイルバッテリー','着替え（2泊分）','洗面用具','常備薬','羽織るもの（朝晩用）','歩きやすい靴','折りたたみ傘','ハンカチ・ティッシュ','エコバッグ','マスク（火山灰対策）','日焼け止め'];
 /* 人によって要るもの：タップで持ち物に足せる候補 */
@@ -1628,6 +1694,128 @@ async function editNotice(){
     throw err;
   }).then(n=>{NOTICE=n||null;try{localStorage.removeItem(KEY+'-notice-hid');}catch(_){} renderHero();renderWeather();toast(n?'連絡事項を書き込みました':'連絡事項を消しました');})
     .catch(err=>{const s=String(err); if(!s.includes('CANCEL')) toast(s.includes('PASSCODE')?'パスコードが違います':'保存できませんでした。電波を確認してください','err');});
+}
+/* ---------- 点呼 ---------- */
+function rollTargets(it){ return ROLL_MEM.filter(m=>!it.grp||m.start===it.grp); }
+function rollBlock(it){
+  if(!HAS_GAS||!ME.email||ROLL_ON!==true) return '';   /* サーバー側（点呼.gs）があるときだけ出す */
+  const key=kOf(it), got=ROLL[key]||{}, mem=rollTargets(it);
+  const done=mem.filter(m=>got[m.name]).length, total=mem.length||Object.keys(got).length;
+  const mine=got[ME.name];
+  return `<div class="roll${mine?' done':''}">
+    ${mine?`<div class="rl-me">${ic('check')}<b>点呼済み</b><span class="num">${esc(mine.t)}</span><button class="link" data-rollundo="${esc(ME.name)}" data-rollkey="${key}">取り消す</button></div>`
+          :`<button class="rl-btn" data-roll="${key}">${ic('check')}着きました（点呼）</button>`}
+    <button class="rl-cnt" data-rolllist="${key}"><span>点呼</span><b class="num">${done}</b><span class="num">/ ${total}人</span>${total>done?`<em>まだ ${total-done}人</em>`:'<em class="ok">全員そろいました</em>'}${ic('chevron')}</button>
+  </div>`;
+}
+function sendRoll(key,name,undo){
+  const it=ALL().find(x=>kOf(x)===key)||DAYS[+key.split('-')[0]].items[+key.split('-')[1]];
+  const self=!name||name===ME.name;
+  /* 押したらすぐ画面に反映（あとでサーバーの結果で上書き） */
+  const g=ROLL[key]=ROLL[key]||{}, nm=name||ME.name;
+  if(undo) delete g[nm]; else g[nm]={t:fmtT(nowMin()),by:self?'本人':ME.name};
+  renderHero(); refreshRollSheet(key);
+  const send=()=>api('rollCall',{key,name:nm,undo:!!undo,title:it?it.title:'',date:DAYS[+key.split('-')[0]].date,pass:S.pass});
+  send().catch(err=>{
+    if(!self&&String(err).includes('PASSCODE'))
+      return ask({title:'編集用のパスコード',msg:'ほかの人の点呼を記録できるのは、パスコードを知っている人だけです。',ok:'記録する',input:{type:'password',placeholder:'パスコード'}})
+        .then(pc=>{if(!pc) throw new Error('CANCEL'); S.pass=pc; save(); return send();});
+    throw err;
+  }).then(r=>{ROLL=r||ROLL; renderHero(); refreshRollSheet(key); if(self&&!undo) toast('点呼しました');})
+    .catch(err=>{ const s=String(err); if(undo) g[nm]={t:'',by:''}; else delete g[nm]; renderHero(); refreshRollSheet(key);
+      if(!s.includes('CANCEL')) toast(s.includes('PASSCODE')?'パスコードが違います':'記録できませんでした。電波を確認してください','err'); });
+}
+let ROLL_OPEN='';
+function rollListHtml(key){
+  const it=DAYS[+key.split('-')[0]].items[+key.split('-')[1]], got=ROLL[key]||{}, mem=rollTargets(it);
+  const yet=mem.filter(m=>!got[m.name]), ok=mem.filter(m=>got[m.name]).sort((a,b)=>String(got[a.name].t).localeCompare(got[b.name].t));
+  return `<div class="rl-sum"><b class="num">${ok.length}</b><span class="num"> / ${mem.length}人</span>　${esc(it.title)}</div>
+    <h4 class="rl-h">まだの人　<span class="num">${yet.length}</span>人</h4>
+    ${yet.length?`<div class="rl-list">${yet.map(m=>`<div class="rl-row"><span>${esc(m.name)}</span><button class="link" data-rollfor="${esc(m.name)}" data-rollkey="${key}">代わりに点呼</button></div>`).join('')}</div>`:'<div class="note">全員そろいました</div>'}
+    <h4 class="rl-h">着いた人　<span class="num">${ok.length}</span>人</h4>
+    <div class="rl-list">${ok.map(m=>`<div class="rl-row ok"><span>${esc(m.name)}</span><span class="num t">${esc(got[m.name].t)}${got[m.name].by&&got[m.name].by!=='本人'?'（'+esc(got[m.name].by)+'）':''}</span><button class="link" data-rollundo="${esc(m.name)}" data-rollkey="${key}">取消</button></div>`).join('')}</div>
+    <div class="note">「代わりに点呼」と、ほかの人の取り消しは、編集パスコードを知っている人だけができます。</div>`;
+}
+function openRollList(key){ ROLL_OPEN=key; openInfoSheet('点呼',rollListHtml(key)); }
+function refreshRollSheet(key){ if(ROLL_OPEN===key&&document.getElementById('wxsheet').classList.contains('on')) document.getElementById('wxsheet-b').innerHTML=rollListHtml(key); }
+
+/* ---------- 搭乗券のQR（この端末の中だけに保存。サーバーには送らない） ---------- */
+const BP_KEY=KEY+'-bp';
+function bpList(){ try{return JSON.parse(localStorage.getItem(BP_KEY)||'[]')||[];}catch(_){return [];} }
+function bpSaveList(l){ try{localStorage.setItem(BP_KEY,JSON.stringify(l)); return true;}catch(_){ toast('保存できませんでした（端末の空き容量）','err'); return false;} }
+let JSQR=null;
+function loadJsQR(){
+  if(JSQR) return JSQR;
+  const self=/github\.io$/.test(location.hostname)?'lib/':'https:'+'/'+'/asanokansuke-max.github.io/hara/trip/lib/';
+  const srcs=[self+'jsQR.js','https:'+'/'+'/cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js'];
+  const tryL=i=>new Promise((ok,ng)=>{ if(i>=srcs.length){ng(new Error('jsqr'));return;}
+    const s=document.createElement('script'); s.src=srcs[i]; s.onload=()=>window.jsQR?ok(window.jsQR):tryL(i+1).then(ok,ng); s.onerror=()=>{s.remove();tryL(i+1).then(ok,ng);}; document.head.appendChild(s); });
+  JSQR=tryL(0).catch(e=>{JSQR=null;throw e;}); return JSQR;
+}
+function pickBoardingPass(cam){ const f=document.getElementById(cam?'bpcam':'bpfile'); f.value=''; f.click(); }
+/* 搭乗券のQRコード（航空会社共通の形式）から、区間と便名を読み取って名前にする */
+const AIRPORT={KMJ:'熊本',HND:'羽田',KMQ:'小松',KOJ:'鹿児島',ITM:'伊丹',NRT:'成田',FUK:'福岡'};
+function bpLabel(data){
+  const s=String(data||'');
+  const m=s.match(/([A-Z]{3})([A-Z]{3})(JL|NU|JAL)\s*0*(\d{1,4})/);
+  if(m&&AIRPORT[m[1]]&&AIRPORT[m[2]]) return AIRPORT[m[1]]+' → '+AIRPORT[m[2]]+'（JAL'+m[4]+'）';
+  const f=s.match(/(?:JL|JAL)\s*0*(\d{2,4})/);
+  if(f){ if(f[1]==='630') return '熊本 → 羽田（JAL630）'; if(f[1]==='189') return '羽田 → 小松（JAL189）'; return 'JAL'+f[1]; }
+  return s?'搭乗券':'搭乗券（画像）';
+}
+async function onBoardingPassFile(file){
+  if(!file) return;
+  toast('QRコードを探しています…');
+  try{
+    const img=await new Promise((ok,ng)=>{const u=URL.createObjectURL(file),im=new Image();im.onload=()=>{ok(im);};im.onerror=ng;im.src=u;});
+    const W=img.naturalWidth,H=img.naturalHeight, sc=Math.min(1,1600/Math.max(W,H));
+    const c=document.createElement('canvas'); c.width=Math.round(W*sc); c.height=Math.round(H*sc);
+    const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height);
+    let found=null;
+    try{ const jsQR=await loadJsQR(); const d=g.getImageData(0,0,c.width,c.height); found=jsQR(d.data,c.width,c.height,{inversionAttempts:'attemptBoth'}); }catch(_){}
+    let out, qr=false;
+    if(found&&found.location){
+      /* QRコードの部分だけを切り出して、白い余白をつけて大きく保存 */
+      const L=found.location, xs=[L.topLeftCorner.x,L.topRightCorner.x,L.bottomLeftCorner.x,L.bottomRightCorner.x], ys=[L.topLeftCorner.y,L.topRightCorner.y,L.bottomLeftCorner.y,L.bottomRightCorner.y];
+      const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys), s=Math.max(x1-x0,y1-y0), m=s*.18;
+      const sx=Math.max(0,(x0+x1)/2-s/2-m)/sc, sy=Math.max(0,(y0+y1)/2-s/2-m)/sc, ss=(s+2*m)/sc;
+      const o=document.createElement('canvas'); o.width=o.height=700; const og=o.getContext('2d');
+      og.fillStyle='#fff'; og.fillRect(0,0,700,700); og.imageSmoothingEnabled=false; og.drawImage(img,sx,sy,ss,ss,0,0,700,700);
+      out=o.toDataURL('image/png'); qr=true;
+      if(out.length>1500000) out=o.toDataURL('image/jpeg',.92);
+    }else{
+      out=c.toDataURL('image/jpeg',.85);
+    }
+    const label=bpLabel(found&&found.data);
+    const l=bpList().filter(x=>x.label!==label); l.push({id:Date.now().toString(36),label,img:out,qr,at:fmtT(nowMin())});
+    if(bpSaveList(l)){ renderMy(); renderHero(); toast(qr?'QRコードを保存しました':'QRコードが見つからなかったので、画像をそのまま保存しました'); showBoardingPass(l[l.length-1].id); }
+  }catch(e){ toast('画像を読み込めませんでした','err'); }
+}
+function showBoardingPass(id){
+  const p=bpList().find(x=>x.id===id); if(!p) return;
+  const v=document.getElementById('bpv');
+  document.getElementById('bpv-t').textContent=p.label;
+  document.getElementById('bpv-n').textContent=ME.name?ME.name+' さん':'';
+  document.getElementById('bpv-img').src=p.img;
+  document.getElementById('bpv-img').className=p.qr?'qr':'raw';
+  v.dataset.id=id; v.hidden=false; document.body.classList.add('pdfOpen'); lockPage(true);
+  if(!(history.state&&history.state.bp)) history.pushState({bp:1},'');
+}
+function closeBoardingPass(fromPop){
+  const v=document.getElementById('bpv'); if(v.hidden) return;
+  v.hidden=true; document.body.classList.remove('pdfOpen'); lockPage(false);
+  if(!fromPop&&history.state&&history.state.bp) history.back();
+}
+window.addEventListener('popstate',()=>closeBoardingPass(true));
+function bpButtons(compact){
+  const l=bpList();
+  if(!l.length) return `<button class="btn bpbtn add" data-bpadd="cam">${ic('camera')}搭乗券のQRコードを撮って保存</button>`;
+  return l.map(p=>`<button class="btn bpbtn" data-bpshow="${p.id}">${ic('qr')}搭乗券を表示<span>${esc(compact?p.label.replace(/（.*）/,''):p.label)}</span></button>`).join('');
+}
+function bpHero(st){
+  /* 帰りの便（3日目の飛行機）が「いま」か「つぎ」のときだけ、上部に出す */
+  const f=[st.cur,st.nx].find(it=>it&&it.k==='flight'&&it.di===DAYS.length-1);
+  return f?`<div class="bphero">${bpButtons(true)}</div>`:'';
 }
 function tokenBanner(){
   if(!HAS_RUN||AUTH!=='ok'||!tokenUrl()||META_TOKEN===TOKEN) return '';
@@ -1811,7 +1999,9 @@ function pull(force){
     if(r.session&&r.session!==TOKEN){TOKEN=r.session;try{localStorage.setItem(KEY+'-token',TOKEN);}catch(_){}
       /* 名前とパスワードで入った直後：アドレスを「入力なしで開ける形」に切り替える（ホーム画面に追加しても覚えたまま） */
       if(HAS_RUN&&META_TOKEN!==TOKEN) setTimeout(goTokenUrl,400);
-    } ROSTER=r.members||[]; CONTACTS=r.contacts||[]; renderMember(); renderInfo(); gotMe(r.me);gotMeet(r.meet);gotDelays(r.delays);gotNotes(r.notes);const albChanged=ALBUM!==(r.albumUrl||'');WEATHER=r.weather||null;ALBUM=r.albumUrl||'';NOTICE=r.notice||null;renderWeather();if(albChanged&&!editMeet)renderDays();if(!isTypingIn('#t-info'))renderInfo();migrateLocal();if(S.tab==='notes'){markNotesSeen();}renderNav();renderHero();if(!isTypingIn('#daybody'))renderDays();if(!isTypingIn('#t-notes,#t-my'))renderNotes();})
+    } ROSTER=r.members||[]; CONTACTS=r.contacts||[]; ROLL=r.roll||ROLL; ROLL_MEM=r.rollMembers||ROLL_MEM;
+      if(ROLL_ON!==false&&r.auth==='ok') api('getRoll').then(x=>{ if(x){ROLL=x.roll||{};ROLL_MEM=x.members||[];ROLL_ON=true;if(!editMeet)renderHero();refreshRollSheet(ROLL_OPEN);} })
+        .catch(e=>{ if(/BAD_ACTION/.test(String(e&&e.message||e))){ROLL_ON=false;if(!editMeet)renderHero();} }); renderMember(); renderInfo(); gotMe(r.me);gotMeet(r.meet);gotDelays(r.delays);gotNotes(r.notes);const albChanged=ALBUM!==(r.albumUrl||'');WEATHER=r.weather||null;ALBUM=r.albumUrl||'';NOTICE=r.notice||null;renderWeather();if(albChanged&&!editMeet)renderDays();if(!isTypingIn('#t-info'))renderInfo();migrateLocal();if(S.tab==='notes'){markNotesSeen();}renderNav();renderHero();if(!isTypingIn('#daybody'))renderDays();if(!isTypingIn('#t-notes,#t-my'))renderNotes();})
     .catch(()=>{SYNC.ok=false;renderHero();if(AUTH==='checking'){document.getElementById('gate').classList.remove('checking');document.getElementById('gate-t').textContent='つながりません';document.getElementById('gate-m').textContent='電波のよい場所で開き直してください。';}}).finally(()=>{SYNC.busy=false;});
 }
 function migrateLocal(){
@@ -1940,7 +2130,7 @@ async function openPdf(id){
   document.getElementById('pdfv-p').textContent='';
   b.innerHTML='<div class="pv-msg">読み込み中…</div>'; b.scrollTop=0;
   PV.zoom=1; document.getElementById('pdfv-z').textContent='100%';
-  v.hidden=false; document.body.classList.add('pdfOpen');
+  v.hidden=false; document.body.classList.add('pdfOpen'); lockPage(true);
   if(!b._sc){ b._sc=1; b.addEventListener('scroll',()=>requestAnimationFrame(showPdfPage),{passive:true}); }
   /* スワイプで戻る・端末の戻るボタンでも閉じられるように */
   if(!(history.state&&history.state.pdf)) history.pushState({pdf:1},'');
@@ -2042,6 +2232,39 @@ async function savePdf(){
     setTimeout(()=>URL.revokeObjectURL(u),60000); toast('保存しました（ダウンロードを確認してください）');
   }catch(e){ toast('保存できませんでした。電波を確認してください','err'); }
 }
+/* PDFを開いている間は、後ろの画面とページ全体の拡大を止める（iPhoneで全体が横にずれるのを防ぐ） */
+let PV_LOCK=null;
+try{ history.scrollRestoration='manual'; }catch(_){}
+function lockPage(on){
+  let m=document.querySelector('meta[name=viewport]');
+  if(on){
+    if(PV_LOCK) return;
+    PV_LOCK={y:window.scrollY,meta:m?m.getAttribute('content'):null};
+    if(!m){m=document.createElement('meta');m.name='viewport';document.head.appendChild(m);}
+    m.setAttribute('content','width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover');
+    document.documentElement.classList.add('pvlock');
+    document.body.style.top=(-PV_LOCK.y)+'px';
+  }else{
+    if(!PV_LOCK) return;
+    if(m){ if(PV_LOCK.meta!=null) m.setAttribute('content',PV_LOCK.meta); else m.remove(); }
+    document.documentElement.classList.remove('pvlock'); document.body.style.top='';
+    const y=PV_LOCK.y; PV_LOCK=null; window.scrollTo(0,y); setTimeout(()=>window.scrollTo(0,y),60);
+  }
+}
+/* 100%のときは、指が横に動いても横には動かさない */
+(function(){
+  let sx=0,sy=0;
+  document.addEventListener('touchstart',e=>{ if(e.touches.length===1){sx=e.touches[0].clientX;sy=e.touches[0].clientY;} },{passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(!document.body.classList.contains('pdfOpen')||e.touches.length!==1) return;
+    const b=document.getElementById('pdfv-b');
+    if(!e.target.closest('#pdfv-b')){ e.preventDefault(); return; }          /* 上下の帯をなぞっても何も動かさない */
+    if(b.classList.contains('fitw')){
+      const dx=Math.abs(e.touches[0].clientX-sx), dy=Math.abs(e.touches[0].clientY-sy);
+      if(dx>dy) e.preventDefault();
+    }
+  },{passive:false});
+})();
 const PDF_ZMIN=1, PDF_ZMAX=8;
 function setPdfZoom(z,cx,cy){
   const b=document.getElementById('pdfv-b'); if(!PV.doc) return;
@@ -2079,12 +2302,13 @@ function zoomPdf(dir){ setPdfZoom(dir>0?PV.zoom*1.5:PV.zoom/1.5); }
 })();
 function closePdf(fromPop){
   const v=document.getElementById('pdfv'); if(v.hidden) return;
-  v.hidden=true; document.body.classList.remove('pdfOpen');
+  v.hidden=true; document.body.classList.remove('pdfOpen'); lockPage(false);
   PV.token++; if(PV.io) PV.io.disconnect(); if(PV.doc){try{PV.doc.destroy();}catch(_){}} PV.doc=null;
   document.getElementById('pdfv-b').innerHTML='';
   if(!fromPop&&history.state&&history.state.pdf) history.back();
 }
 window.addEventListener('popstate',()=>closePdf(true));
+document.addEventListener('change',e=>{ if(e.target&&(e.target.id==='bpfile'||e.target.id==='bpcam')) onBoardingPassFile(e.target.files&&e.target.files[0]); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closePdf(); });
 document.addEventListener('click',e=>{
   if(e.target.closest('[data-pdfsave]')){ e.preventDefault(); if(PV.doc&&!PV.file){ toast('準備中です。少し待ってからもう一度押してください'); return; } savePdf(); return; }
@@ -2100,6 +2324,7 @@ function linksHtml(it,withMap=true){
     <a class="btn" href="https:\/\/www.google.com/search?q=${encodeURIComponent(q)}" target="_blank" rel="noopener">${ic('search')}検索結果</a>
     ${withMap?`<a class="btn" href="${mapUrl(q)}" target="_blank" rel="noopener">${ic('pin')}Googleマップ</a>`:''}
     ${it.tel?`<a class="btn" href="${telUrl(it.tel)}" data-name="${esc(it.title)}" data-num="${it.tel}">${ic('phone')}電話</a>`:''}
+    ${it.k==='flight'&&it.di===DAYS.length-1?bpButtons(true):''}
   </div>${pamsFor(it).length?`<div class="pamrows">${pamsFor(it).map(p=>`<a class="pamrow" href="${pdfUrl(p.id)}" target="_blank" rel="noopener" data-pdf="${p.id}">
       <img src="${p.th}" alt="" loading="lazy"><span class="pr-t"><i>パンフレット</i><b>${esc(p.t)}</b><em>${esc(p.d)}</em></span>${ic('chevron')}</a>`).join('')}</div>`:''}`;
 }
@@ -2283,7 +2508,7 @@ function renderHero(){
         ${verb?`<span class="left">${verb}<br><span class="num">${dur(ce-n)}</span></span>`:''}</div>
         <div class="where">${tS(cur)}${cur.e?'〜'+tE(cur):'〜'}${cur.shift?'（予定 '+cur.t+(cur.e?'〜'+cur.e:'')+'）':''}${cur.sub?'　'+esc(cur.sub):''}</div>${spotInfo(cur,true)}
         ${(cur.e||hasMeet)&&!(hasMeet&&n>=ce)?`<div class="bar"><i style="width:${pct}%"></i></div>`:''}
-        ${moving?'':meetCard(cur,n)+linksHtml(cur)}`;
+        ${moving?'':meetCard(cur,n)+((meetOf(cur)||cur.k==='gather')?rollBlock(cur):'')+linksHtml(cur)}`;
     if(nx&&nx.di===cur.di) h+=goBlock(nx,ce,n,'つぎ',cur.pen)+laterBlock(st);
     else if(nx) h+=tonightLink(cur.di)+`<div class="go"><div class="lbl">${ic('cal')}きょうの予定はここまで</div>
         <div class="dest"><span class="num">${nx.t}</span><b>${esc(nx.title)}</b></div><div class="where">${DAYS[nx.di].label}（10/${+DAYS[nx.di].date.slice(8)}）の最初の予定</div></div>`;
@@ -2305,7 +2530,7 @@ function renderHero(){
     const a=h.slice(0,gi), b=h.slice(gi);
     h=(a.replace(/<div class="simflag"[^>]*>.*?<\/div>/g,'').trim()?`<div class="${cur||(prev&&nx&&prev.di===nx.di)?'blk-now':'blk-plain'}">${a}</div>`:'')+`<div class="blk-next">${b}</div>`;
   }
-  el.innerHTML=noticeBar()+tokenBanner()+h;
+  el.innerHTML=noticeBar()+tokenBanner()+h+bpHero(st);
   document.body.classList.toggle('sub',S.tab!=='plan');
   document.body.classList.toggle('onnotes',S.tab==='notes');
   if(S.tab==='plan') setTimeout(()=>{try{renderMap();}catch(_){}},60);
@@ -2814,6 +3039,11 @@ function renderMy(){
   ${wanted.length?`<div class="blk"><h3>「行きたい」「買いたい」を押したメモ</h3>${wanted.map(noteCard).join('')}</div>`:''}
   ${posted.length?`<div class="blk"><h3>自分がみんなに共有したメモ</h3>${posted.map(noteCard).join('')}</div>`:''}
   ${pm?`<div class="blk"><h3>日程に書いたメモ</h3>${pm}</div>`:''}
+  <div class="blk"><h3>帰りの搭乗券</h3>
+    <div class="bpmy">${bpList().map(p=>`<div class="bprow"><img src="${p.img}" alt=""><div class="bpm"><b>${esc(p.label)}</b><span>保存 ${esc(p.at)}${p.qr?'':'（画像のまま）'}</span></div>
+      <button class="btn" data-bpshow="${p.id}">表示</button><button class="link" data-bpdel="${p.id}">削除</button></div>`).join('')}</div>
+    <div class="bpadd2"><button class="btn bpbig" data-bpadd="cam">${ic('camera')}カメラで撮る</button><button class="btn bpbig" data-bpadd="pic">${ic('photo')}写真から選ぶ</button></div>
+    <div class="note">搭乗券のQRコードを撮るか、スクリーンショットを選ぶだけです。QRコードの部分を自動で切り出し、便名も自動で付けて保存します。<b>この端末の中だけに保存され、ほかの人やサーバーには送られません。</b>搭乗口では、念のため紙の搭乗券も持っておいてください。</div></div>
   <div class="blk"><h3>持ち物</h3><div id="packbox"></div></div>
   <div class="appver">しおりの版：${((document.querySelector('meta[name="app-version"]')||{}).content||'-').replace(/^__.*__$/,'-')}</div>
   ${MY_SETTINGS()}`;
@@ -2850,7 +3080,7 @@ function renderAll(){
 
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-refresh],[data-tab],[data-day],[data-toggle],[data-start],[data-pack],[data-packdel],[data-packreset],[data-sim],[data-clear],[data-mapfull],[data-noticehide],[data-noticeedit],[data-columns],[data-mapt],[data-locate],[data-dia],[data-wx],[data-wxclose],[data-gotoken],[data-packadd],[data-view-size],[data-view-toggle],[data-delayopen],[data-delayset],[data-delaycancel],[data-scene],[data-note],[data-want],[data-vis],[data-kind],[data-nkind],[data-vis],[data-meetedit],[data-meetq],[data-meetsave],[data-meetdel],[data-meetcancel]');
+  const t=e.target.closest('[data-refresh],[data-tab],[data-day],[data-toggle],[data-start],[data-pack],[data-packdel],[data-packreset],[data-sim],[data-clear],[data-roll],[data-rolllist],[data-rollfor],[data-rollundo],[data-bpadd],[data-bpshow],[data-bpdel],[data-bpclose],[data-mapfull],[data-noticehide],[data-noticeedit],[data-columns],[data-mapt],[data-locate],[data-dia],[data-wx],[data-wxclose],[data-gotoken],[data-packadd],[data-view-size],[data-view-toggle],[data-delayopen],[data-delayset],[data-delaycancel],[data-scene],[data-note],[data-want],[data-vis],[data-kind],[data-nkind],[data-vis],[data-meetedit],[data-meetq],[data-meetsave],[data-meetdel],[data-meetcancel]');
   if(!t) return;
   const ds=t.dataset;
   if(ds.tab){if(ds.tab!==S.tab&&editMeet){if(!(await confirmDiscard()))return;renderSheet();renderNotes();}
@@ -2939,6 +3169,14 @@ document.addEventListener('click',async e=>{
   else if('columns' in ds){openColumns();}
   else if('noticeedit' in ds){editNotice();}
   else if('noticehide' in ds){try{localStorage.setItem(KEY+'-notice-hid',NOTICE.text+'|'+NOTICE.until);}catch(_){} renderHero();}
+  else if(ds.roll){sendRoll(ds.roll);}
+  else if(ds.rolllist){openRollList(ds.rolllist);}
+  else if(ds.rollfor){ if(await ask({title:ds.rollfor+' さんを点呼済みにしますか？',ok:'点呼済みにする'})) sendRoll(ds.rollkey,ds.rollfor); }
+  else if(ds.rollundo){ if(await ask({title:(ds.rollundo===ME.name?'自分':ds.rollundo+' さん')+'の点呼を取り消しますか？',ok:'取り消す',danger:true})) sendRoll(ds.rollkey,ds.rollundo,true); }
+  else if('bpadd' in ds){pickBoardingPass(ds.bpadd!=='pic');}
+  else if(ds.bpshow){showBoardingPass(ds.bpshow);}
+  else if(ds.bpdel){ if(await ask({title:'この搭乗券を削除しますか？',msg:'この端末から消えます。',ok:'削除する',danger:true})){ bpSaveList(bpList().filter(x=>x.id!==ds.bpdel)); renderMy(); renderHero(); } }
+  else if('bpclose' in ds){closeBoardingPass();}
   else if(ds.sim){
     if(ds.sim==='set'){const v=document.getElementById('simin').value; if(/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(v)) SIM=toMin(v.slice(0,10),v.slice(11,16));}
     else SIM=null;
