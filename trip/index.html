@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/08 13:54">
+<meta name="app-version" content="10/08 15:07">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1418,6 +1418,17 @@ html.pvlock body{position:fixed;left:0;right:0;width:100%}
 .flow li.done{color:var(--next,#0b7a5f)}
 .flow li.now i{border-color:var(--now,#e07b00);color:var(--now,#e07b00);box-shadow:0 0 0 4px rgba(224,123,0,.18)}
 .flow li.now{color:var(--now,#e07b00);font-weight:900}
+
+/* 便ごとの入力欄 */
+.bpv-info{display:grid!important;grid-template-columns:1fr!important;gap:8px}
+.bpleg{display:grid;gap:5px}
+.bpl-h{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink)}
+.bpl-h svg{width:15px;height:15px;color:var(--sea)}
+.bpl-h b{font-weight:900}
+.bpl-h span{margin-left:auto;color:var(--muted);font-weight:800}
+.bpl-f{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.bpl-f .bpf{padding:6px 2px}
+.bpl-f .bpf b{font-size:17px}
 </style>
 </head>
 <body class="locked">
@@ -1924,7 +1935,9 @@ async function onBoardingPassFile(file){
     const info=bpParse(found&&found.data);
     const old=bpList().find(x=>x.label===label)||{};
     const l=bpList().filter(x=>x.label!==label);
-    l.push({id:Date.now().toString(36),label,img:out,qr,raw,at:fmtT(nowMin()),seat:info.seat||old.seat||'',group:old.group||'',gate:old.gate||'',board:old.board||''});
+    const legs=old.legs?JSON.parse(JSON.stringify(old.legs)):{};
+    if(info.seat){ const m=String(found&&found.data||'').match(/(?:JL|JAL)\s*0*(\d{2,4})/); const lk=m?'JAL'+m[1]:bpLegs()[0].key; legs[lk]=Object.assign({},legs[lk],{seat:info.seat}); }
+    l.push({id:Date.now().toString(36),label,img:out,qr,raw,at:fmtT(nowMin()),legs,seat:old.seat||'',group:old.group||'',gate:old.gate||'',board:old.board||''});
     if(bpSaveList(l)){ renderMy(); renderHero(); toast(qr?'QRコードを保存しました':'QRコードが見つからなかったので、画像をそのまま保存しました'); showBoardingPass(l[l.length-1].id); }
   }catch(e){ toast('画像を読み込めませんでした','err'); }
 }
@@ -1973,15 +1986,41 @@ function showBoardingPass(id){
   if(!(history.state&&history.state.bp)) history.pushState({bp:1},'');
 }
 const BP_FIELDS=[['seat','座席','例：12A'],['group','搭乗グループ','例：グループ3'],['gate','搭乗口','例：3番'],['board','搭乗開始','例：13:35']];
-function renderBpInfo(p){
-  document.getElementById('bpv-info').innerHTML=BP_FIELDS.map(([k,l])=>`<button class="bpf${p[k]?'':' empty'}" data-bpfield="${k}"><span>${l}</span><b class="num">${p[k]?esc(p[k]):'入力'}</b></button>`).join('');
+/* 帰りの飛行機（3日目。自分の集合ルートの便だけ）：小松の人は2本、羽田の人は1本 */
+function bpLegs(){
+  const d=DAYS[DAYS.length-1];
+  const f=d.items.filter(it=>it.k==='flight'&&!isOff(it)).map(it=>({key:it.title.split(/[\s　]/)[0],label:it.title.replace(/[\s　]+/,'　'),t:it.t}));
+  return f.length?f:[{key:'main',label:'',t:''}];
 }
-async function editBpField(k){
+/* 便ごとの入力（前の版で1つだけ入れていたものは、最初の便に移す） */
+function bpLegData(p){
+  const legs=bpLegs(); p.legs=p.legs||{};
+  if(!Object.keys(p.legs).length&&[p.seat,p.group,p.gate,p.board].some(Boolean)){
+    p.legs[legs[0].key]={seat:p.seat||'',group:p.group||'',gate:p.gate||'',board:p.board||''};
+  }
+  return legs.map(l=>({...l,v:p.legs[l.key]||{}}));
+}
+function renderBpInfo(p){
+  const ls=bpLegData(p);
+  document.getElementById('bpv-info').innerHTML=ls.map(l=>`<div class="bpleg">${l.label?`<div class="bpl-h">${ic('plane')}<b>${esc(l.label)}</b>${l.t?`<span class="num">${l.t}発</span>`:''}</div>`:''}
+    <div class="bpl-f">${BP_FIELDS.map(([k,lb])=>`<button class="bpf${l.v[k]?'':' empty'}" data-bpfield="${l.key}|${k}"><span>${lb}</span><b class="num">${l.v[k]?esc(l.v[k]):'入力'}</b></button>`).join('')}</div></div>`).join('');
+}
+async function editBpField(spec){
+  const [leg,k]=spec.split('|');
   const id=document.getElementById('bpv').dataset.id, l=bpList(), p=l.find(x=>x.id===id); if(!p) return;
-  const f=BP_FIELDS.find(x=>x[0]===k);
-  const v=await ask({title:f[1],msg:'搭乗券に書いてある内容を入れてください。空にすると消えます。',ok:'保存する',input:{type:'text',value:p[k]||'',placeholder:f[2]}});
+  bpLegData(p);
+  const f=BP_FIELDS.find(x=>x[0]===k), lg=bpLegs().find(x=>x.key===leg)||{label:''};
+  const cur=(p.legs[leg]||{})[k]||'';
+  const v=await ask({title:f[1]+(lg.label?'（'+lg.label.split('　')[0]+'）':''),msg:(lg.label?lg.label+'の搭乗券に書いてある内容を入れてください。':'搭乗券に書いてある内容を入れてください。')+'空にすると消えます。',ok:'保存する',input:{type:'text',value:cur,placeholder:f[2]}});
   if(v==null) return;
-  p[k]=String(v).trim().slice(0,20); bpSaveList(l); renderBpInfo(p); renderMy();
+  p.legs[leg]=p.legs[leg]||{}; p.legs[leg][k]=String(v).trim().slice(0,20);
+  delete p.seat; delete p.group; delete p.gate; delete p.board;
+  bpSaveList(l); renderBpInfo(p); renderMy();
+}
+/* マイページの一覧用：便ごとの要約 */
+function bpSummary(p){
+  return bpLegData(p).map(l=>{const v=l.v, s=[v.seat&&'座席 '+v.seat,v.gate&&'搭乗口 '+v.gate,v.group&&v.group,v.board&&'搭乗 '+v.board].filter(Boolean).join('・');
+    return s?(l.label?l.key+' ':'')+s:'';}).filter(Boolean).join(' ／ ');
 }
 function closeBoardingPass(fromPop){
   const v=document.getElementById('bpv'); if(v.hidden) return;
@@ -3282,9 +3321,9 @@ function renderMy(){
   ${posted.length?`<div class="blk"><h3>自分がみんなに共有したメモ</h3>${posted.map(noteCard).join('')}</div>`:''}
   ${pm?`<div class="blk"><h3>日程に書いたメモ</h3>${pm}</div>`:''}
   <div class="blk"><h3>帰りの搭乗券</h3>
-    <div class="bpmy">${bpList().map(p=>`<div class="bprow"><img src="${p.img}" alt=""><div class="bpm"><b>${esc(p.label)}</b><span>${[p.seat&&'座席 '+esc(p.seat),p.gate&&'搭乗口 '+esc(p.gate),p.group&&esc(p.group),p.board&&'搭乗 '+esc(p.board)].filter(Boolean).join('・')||'保存 '+esc(p.at)+(p.qr?'':'（画像のまま）')}</span></div>
+    <div class="bpmy">${bpList().map(p=>`<div class="bprow"><img src="${p.img}" alt=""><div class="bpm"><b>${esc(p.label)}</b><span>${esc(bpSummary(p))||'保存 '+esc(p.at)+(p.qr?'':'（画像のまま）')}</span></div>
       <div class="bpact"><button class="btn" data-bpshow="${p.id}">表示</button><button class="link" data-bpdel="${p.id}">削除</button></div></div>
-      <button class="btn bpedit" data-bpshow="${p.id}">${ic('edit')}<span>${[p.seat,p.group,p.gate,p.board].some(Boolean)?'座席・搭乗口などを直す':'座席・搭乗口などを入力'}</span></button>`).join('')}</div>
+      <button class="btn bpedit" data-bpshow="${p.id}">${ic('edit')}<span>${bpSummary(p)?'座席・搭乗口などを直す':'座席・搭乗口などを入力'}${bpLegs().length>1?'（'+bpLegs().length+'便分）':''}</span></button>`).join('')}</div>
     <div class="bpadd2"><button class="btn bpbig" data-bpadd="cam">${ic('camera')}カメラで撮る</button><button class="btn bpbig" data-bpadd="pic">${ic('photo')}写真から選ぶ</button></div>
     <div class="note">搭乗券のQRコードを撮るか、スクリーンショットを選ぶだけです。QRコードの部分を自動で切り出し、便名も自動で付けて保存します。<b>この端末の中だけに保存され、ほかの人やサーバーには送られません。</b>搭乗口では、念のため紙の搭乗券も持っておいてください。</div></div>
   <div class="blk"><h3>持ち物</h3><div id="packbox"></div></div>
