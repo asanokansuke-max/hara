@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/08 11:22">
+<meta name="app-version" content="10/08 11:32">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1355,6 +1355,8 @@ html.pvlock body{position:fixed;left:0;right:0;width:100%}
 .bpqr{image-rendering:pixelated;display:block}
 .bpv-sw{text-align:center;padding:0 0 4px}
 .bpv-sw .link{font-size:12.5px;color:var(--muted)}
+
+.bpedit{width:100%;justify-content:center;font-size:13px;margin-top:-2px}
 </style>
 </head>
 <body class="locked">
@@ -1814,7 +1816,8 @@ async function onBoardingPassFile(file){
     const c=document.createElement('canvas'); c.width=Math.round(W*sc); c.height=Math.round(H*sc);
     const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(img,0,0,c.width,c.height);
     let found=null;
-    try{ const jsQR=await loadJsQR(); const d=g.getImageData(0,0,c.width,c.height); found=jsQR(d.data,c.width,c.height,{inversionAttempts:'attemptBoth'}); }catch(_){}
+    try{ const jsQR=await loadJsQR(); const d=g.getImageData(0,0,c.width,c.height); found=jsQR(d.data,c.width,c.height,{inversionAttempts:'attemptBoth'});
+      if(!found) found=qrScan(jsQR,c,[.6,.4]); }catch(_){}
     let out, qr=false;
     if(found&&found.location){
       /* QRコードの部分だけを切り出して、白い余白をつけて大きく保存 */
@@ -1838,8 +1841,36 @@ async function onBoardingPassFile(file){
     if(bpSaveList(l)){ renderMy(); renderHero(); toast(qr?'QRコードを保存しました':'QRコードが見つからなかったので、画像をそのまま保存しました'); showBoardingPass(l[l.length-1].id); }
   }catch(e){ toast('画像を読み込めませんでした','err'); }
 }
+/* 大きさを変えながら読み取る（くっきりしすぎ・大きすぎでも読めるように） */
+function qrScan(jsQR,im,scales){
+  for(const s of scales){
+    const c=document.createElement('canvas'); c.width=Math.max(1,Math.round((im.naturalWidth||im.width)*s)); c.height=Math.max(1,Math.round((im.naturalHeight||im.height)*s));
+    const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.drawImage(im,0,0,c.width,c.height);
+    const f=jsQR(g.getImageData(0,0,c.width,c.height).data,c.width,c.height,{inversionAttempts:'attemptBoth'});
+    if(f){
+      /* 見つけた位置を、元の大きさの座標に戻しておく */
+      if(f.location&&s!==1) Object.keys(f.location).forEach(k=>{const p=f.location[k]; if(p&&typeof p.x==='number'){p.x/=s;p.y/=s;}});
+      return f;
+    }
+  }
+  return null;
+}
+async function bpRecover(p){
+  try{
+    const jsQR=await loadJsQR();
+    const im=await new Promise((ok,ng)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=ng;i.src=p.img;});
+    const f=qrScan(jsQR,im,[1,.6,.4]);
+    if(!f||!f.binaryData) return false;
+    const l=bpList(), q=l.find(x=>x.id===p.id); if(!q) return false;
+    q.raw=String.fromCharCode.apply(null,f.binaryData); q.qr=true;
+    if(/^搭乗券/.test(q.label)) q.label=bpLabel(f.data);
+    if(!q.seat) q.seat=bpParse(f.data).seat||'';
+    bpSaveList(l); return true;
+  }catch(_){ return false; }
+}
 function showBoardingPass(id){
   const p=bpList().find(x=>x.id===id); if(!p) return;
+  if(!p.raw&&!p._tried){ p._tried=1; bpRecover(p).then(ok=>{ if(ok&&!document.getElementById('bpv').hidden) showBoardingPass(id); renderMy(); }); }
   const v=document.getElementById('bpv');
   if(v.dataset.id!==id) v.dataset.orig='';
   document.getElementById('bpv-t').textContent=p.label;
@@ -3105,7 +3136,8 @@ function renderMy(){
   ${pm?`<div class="blk"><h3>日程に書いたメモ</h3>${pm}</div>`:''}
   <div class="blk"><h3>帰りの搭乗券</h3>
     <div class="bpmy">${bpList().map(p=>`<div class="bprow"><img src="${p.img}" alt=""><div class="bpm"><b>${esc(p.label)}</b><span>${[p.seat&&'座席 '+esc(p.seat),p.gate&&'搭乗口 '+esc(p.gate),p.group&&esc(p.group),p.board&&'搭乗 '+esc(p.board)].filter(Boolean).join('・')||'保存 '+esc(p.at)+(p.qr?'':'（画像のまま）')}</span></div>
-      <button class="btn" data-bpshow="${p.id}">表示</button><button class="link" data-bpdel="${p.id}">削除</button></div>`).join('')}</div>
+      <button class="btn" data-bpshow="${p.id}">表示</button><button class="link" data-bpdel="${p.id}">削除</button></div>
+      <button class="btn bpedit" data-bpshow="${p.id}">${ic('edit')}座席・搭乗グループ・搭乗口・搭乗開始を入力${[p.seat,p.group,p.gate,p.board].some(Boolean)?'（入力済み）':''}</button>`).join('')}</div>
     <div class="bpadd2"><button class="btn bpbig" data-bpadd="cam">${ic('camera')}カメラで撮る</button><button class="btn bpbig" data-bpadd="pic">${ic('photo')}写真から選ぶ</button></div>
     <div class="note">搭乗券のQRコードを撮るか、スクリーンショットを選ぶだけです。QRコードの部分を自動で切り出し、便名も自動で付けて保存します。<b>この端末の中だけに保存され、ほかの人やサーバーには送られません。</b>搭乗口では、念のため紙の搭乗券も持っておいてください。</div></div>
   <div class="blk"><h3>持ち物</h3><div id="packbox"></div></div>
