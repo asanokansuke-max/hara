@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/08 11:55">
+<meta name="app-version" content="10/08 13:44">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1378,6 +1378,31 @@ html.pvlock body{position:fixed;left:0;right:0;width:100%}
 .bpedit{display:flex!important;overflow:hidden}
 .bpedit span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bpmy,.bprow,.bpedit,.bpadd2{min-width:0}
+
+/* 出発しました */
+.rl-go{display:flex;align-items:center;gap:10px;width:100%;margin:8px 0 2px;padding:11px 12px;border-radius:14px;background:#fff;border:2px solid var(--next,#0b7a5f);color:var(--next,#0b7a5f);text-align:left}
+.rl-go svg{width:22px;height:22px;flex:none}
+.rl-go svg:last-child{width:16px;height:16px}
+.rl-go span{display:flex;flex-direction:column;flex:1;min-width:0}
+.rl-go b{font-size:16px;font-weight:900}
+.rl-go em{font-style:normal;font-size:12px;font-weight:700;color:var(--muted)}
+.rl-go.ready{background:var(--next,#0b7a5f);color:#fff}
+.rl-go.ready em{color:rgba(255,255,255,.85)}
+.rl-go:active{transform:scale(.98)}
+
+/* 点呼の一覧：まとめて選ぶ */
+.rl-h{display:flex;align-items:center}
+.rl-all{margin-left:auto;font-size:13px}
+.rl-row.sel{cursor:pointer;-webkit-user-select:none;user-select:none}
+.rl-row.sel input{position:absolute;opacity:0;pointer-events:none}
+.rl-box{width:24px;height:24px;border-radius:7px;border:2px solid #c9a46a;background:#fff;display:grid;place-items:center;flex:none}
+.rl-box svg{width:16px;height:16px;stroke-width:3;color:#fff;opacity:0}
+.rl-row.sel.on{background:#fde7c2}
+.rl-row.sel.on .rl-box{background:var(--now,#e07b00);border-color:var(--now,#e07b00)}
+.rl-row.sel.on .rl-box svg{opacity:1}
+.rl-many{position:sticky;bottom:0;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;margin-top:10px;border-radius:14px;background:var(--now,#e07b00);color:#fff;font-size:16px;font-weight:900;box-shadow:0 -4px 12px rgba(255,255,255,.9),0 3px 10px rgba(224,123,0,.3)}
+.rl-many svg{width:20px;height:20px;stroke-width:2.6}
+.rl-many[disabled]{background:#d8d2c4;box-shadow:none}
 </style>
 </head>
 <body class="locked">
@@ -1761,18 +1786,44 @@ function sendRoll(key,name,undo){
     .catch(err=>{ const s=String(err); if(undo) g[nm]={t:'',by:''}; else delete g[nm]; renderHero(); refreshRollSheet(key);
       if(!s.includes('CANCEL')) toast(s.includes('PASSCODE')?'パスコードが違います':'記録できませんでした。電波を確認してください','err'); });
 }
-let ROLL_OPEN='';
+let ROLL_OPEN='', ROLL_SEL=new Set();
+/* 選んだ人をまとめて点呼済みにする（1人ずつ順番に送る） */
+async function sendRollMany(key){
+  const it=DAYS[+key.split('-')[0]].items[+key.split('-')[1]], got=ROLL[key]||{};
+  const names=[...ROLL_SEL].filter(nm=>!got[nm]); if(!names.length) return;
+  if(!(await ask({title:names.length+'人を点呼済みにしますか？',msg:names.join('、'),ok:'点呼済みにする'}))) return;
+  const g=ROLL[key]=ROLL[key]||{}; names.forEach(nm=>g[nm]={t:fmtT(nowMin()),by:ME.name});
+  ROLL_SEL.clear(); renderHero(); refreshRollSheet(key);
+  const one=nm=>api('rollCall',{key,name:nm,title:it?it.title:'',date:DAYS[+key.split('-')[0]].date,pass:S.pass});
+  let ok=0, fail=[];
+  for(let i=0;i<names.length;i++){
+    toast(`点呼を記録しています… ${i+1} / ${names.length}`);
+    try{ ROLL=await one(names[i])||ROLL; ok++; }
+    catch(err){
+      if(String(err).includes('PASSCODE')){
+        const pc=await ask({title:'編集用のパスコード',msg:'ほかの人の点呼を記録できるのは、パスコードを知っている人だけです。',ok:'記録する',input:{type:'password',placeholder:'パスコード'}});
+        if(!pc){ fail=fail.concat(names.slice(i)); break; }
+        S.pass=pc; save(); i--; continue;
+      }
+      fail.push(names[i]);
+    }
+  }
+  fail.forEach(nm=>{ if(ROLL[key]) delete ROLL[key][nm]; });
+  renderHero(); refreshRollSheet(key);
+  toast(fail.length?`${ok}人を記録しました。${fail.length}人は記録できませんでした`:`${ok}人を点呼済みにしました`, fail.length?'err':undefined);
+}
 function rollListHtml(key){
   const it=DAYS[+key.split('-')[0]].items[+key.split('-')[1]], got=ROLL[key]||{}, mem=rollTargets(it);
   const yet=mem.filter(m=>!got[m.name]), ok=mem.filter(m=>got[m.name]).sort((a,b)=>String(got[a.name].t).localeCompare(got[b.name].t));
   return `<div class="rl-sum"><b class="num">${ok.length}</b><span class="num"> / ${mem.length}人</span>　${esc(it.title)}</div>
-    <h4 class="rl-h">まだの人　<span class="num">${yet.length}</span>人</h4>
-    ${yet.length?`<div class="rl-list">${yet.map(m=>`<div class="rl-row"><span>${esc(m.name)}</span><button class="link" data-rollfor="${esc(m.name)}" data-rollkey="${key}">代わりに点呼</button></div>`).join('')}</div>`:'<div class="note">全員そろいました</div>'}
+    <h4 class="rl-h">まだの人　<span class="num">${yet.length}</span>人${yet.length?`<button class="link rl-all" data-rollselall="${key}">${yet.every(m=>ROLL_SEL.has(m.name))?'選択を外す':'すべて選ぶ'}</button>`:''}</h4>
+    ${yet.length?`<div class="rl-list">${yet.map(m=>`<label class="rl-row sel${ROLL_SEL.has(m.name)?' on':''}"><input type="checkbox" data-rollsel="${esc(m.name)}" data-rollkey="${key}"${ROLL_SEL.has(m.name)?' checked':''}><span class="rl-box">${ic('check')}</span><span>${esc(m.name)}</span></label>`).join('')}</div>
+      <button class="rl-many" data-rollmany="${key}"${[...ROLL_SEL].some(nm=>yet.some(m=>m.name===nm))?'':' disabled'}>${ic('check')}<span>選んだ人を点呼済みにする（${yet.filter(m=>ROLL_SEL.has(m.name)).length}人）</span></button>`:'<div class="note">全員そろいました</div>'}
     <h4 class="rl-h">着いた人　<span class="num">${ok.length}</span>人</h4>
     <div class="rl-list">${ok.map(m=>`<div class="rl-row ok"><span>${esc(m.name)}</span><span class="num t">${esc(got[m.name].t)}${got[m.name].by&&got[m.name].by!=='本人'?'（'+esc(got[m.name].by)+'）':''}</span><button class="link" data-rollundo="${esc(m.name)}" data-rollkey="${key}">取消</button></div>`).join('')}</div>
-    <div class="note">「代わりに点呼」と、ほかの人の取り消しは、編集パスコードを知っている人だけができます。</div>`;
+    <div class="note">まだの人を選んで「点呼済みにする」と、まとめて代わりに点呼できます。ほかの人の点呼と取り消しは、編集パスコードを知っている人だけができます。</div>`;
 }
-function openRollList(key){ ROLL_OPEN=key; openInfoSheet('点呼',rollListHtml(key)); }
+function openRollList(key){ ROLL_OPEN=key; ROLL_SEL.clear(); openInfoSheet('点呼',rollListHtml(key)); }
 function refreshRollSheet(key){ if(ROLL_OPEN===key&&document.getElementById('wxsheet').classList.contains('on')) document.getElementById('wxsheet-b').innerHTML=rollListHtml(key); }
 
 /* ---------- 搭乗券のQR（この端末の中だけに保存。サーバーには送らない） ---------- */
@@ -2427,7 +2478,11 @@ function closePdf(fromPop){
   if(!fromPop&&history.state&&history.state.pdf) history.back();
 }
 window.addEventListener('popstate',()=>closePdf(true));
-document.addEventListener('change',e=>{ if(e.target&&(e.target.id==='bpfile'||e.target.id==='bpcam')) onBoardingPassFile(e.target.files&&e.target.files[0]); });
+document.addEventListener('change',e=>{
+  if(e.target&&(e.target.id==='bpfile'||e.target.id==='bpcam')) onBoardingPassFile(e.target.files&&e.target.files[0]);
+  const c=e.target&&e.target.closest&&e.target.closest('[data-rollsel]');
+  if(c){ const nm=c.dataset.rollsel; c.checked?ROLL_SEL.add(nm):ROLL_SEL.delete(nm); refreshRollSheet(c.dataset.rollkey); }
+});
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closePdf(); });
 document.addEventListener('click',e=>{
   if(e.target.closest('[data-pdfsave]')){ e.preventDefault(); if(PV.doc&&!PV.file){ toast('準備中です。少し待ってからもう一度押してください'); return; } savePdf(); return; }
@@ -2476,13 +2531,38 @@ const tS=it=>fmtT(it.s), tE=it=>it.e?fmtT(it.en):'';
 const planTag=it=>it.shift?`<span class="plantag">予定 ${it.t}</span>`:'';
 let editMeet=null;
 const SCROLL={};
+/* その場所の次の予定（飛行機以外。同じ日の中） */
+function nextAfter(it){ const d=DAYS[it.di]; const i=d.items.indexOf(it); return d.items.slice(i+1).find(x=>x.k!=='flight'&&!isOff(x))||null; }
+/* 集合時間のあとに「出発しました」（＝次の予定の時刻のずれ）が共有されたか */
+function departed(it){
+  const m=meetMin(it), tg=nextAfter(it); if(m==null||!tg) return false;
+  const rec=DELAYS[kOf(tg)]; if(!rec||!rec.at) return false;
+  const at=(Date.parse(rec.at)+9*3600e3)/60000;
+  return at>=m-1;
+}
+/* 「出発しました」：次の予定の到着見込みを、いまからの移動時間で計算し直して全員に共有する */
+async function departNow(key){
+  const st=status(), it=st.list.find(x=>kOf(x)===key); if(!it) return;
+  const tg=nextAfter(it); if(!tg){ toast('この日の次の予定がありません'); return; }
+  const travel=Math.max(0,tg.ps-it.pen);
+  const n=st.n, arr=n+travel;
+  let min=Math.round((arr-tg.ps)/5)*5; min=Math.max(-120,Math.min(240,min));
+  if(!(await ask({title:'出発を全員に知らせますか？',msg:`「${tg.title}」の到着見込みを、いまからの移動時間（約${travel}分）で計算し直して、全員の画面に反映します。\n到着見込み：${fmtT(tg.ps+min)}（予定表では ${fmtT(tg.ps)}）`,ok:'出発しました'}))) return;
+  pushDelay(min,tg,'出発を全員に知らせました');
+}
+function departBtn(it,n){
+  if(!HAS_GAS||!ME.email) return '';
+  const m=meetMin(it); if(m==null||n<m-20||departed(it)||!nextAfter(it)) return '';
+  const key=kOf(it), got=ROLL[key]||{}, mem=rollTargets(it), all=ROLL_ON===true&&mem.length>0&&mem.every(x=>got[x.name]);
+  return `<button class="rl-go${all?' ready':''}" data-depart="${key}">${ic('bus')}<span><b>出発しました</b><em>${all?'全員そろったら押してください':'押すと次の予定へ進みます'}</em></span>${ic('chevron')}</button>`;
+}
 function status(){
   applyShift();
   const n=nowMin(), list=ALL();
   /* 予定の最中（同時刻に重なる場合は後ろを優先）。集合時間を過ぎても、メモしてあればその時刻まで「いま」のまま */
   let ci=-1; list.forEach((it,i)=>{if(it.s<=n&&n<endOf(it)) ci=i;});
-  if(ci<0){ /* 集合時間を少し過ぎただけ（30分以内）なら、まだその場所にいる扱い */
-    list.forEach((it,i)=>{const m=meetMin(it); if(m!=null&&n>=m&&n<m+30&&!list.some(x=>x.s>it.s&&x.s<=n)) ci=i;});
+  if(ci<0){ /* 集合時間を少し過ぎただけ（30分以内）なら、まだその場所にいる扱い。ただし「出発しました」のあとは次へ進む */
+    list.forEach((it,i)=>{const m=meetMin(it); if(m!=null&&n>=m&&n<m+30&&!list.some(x=>x.s>it.s&&x.s<=n)&&!departed(it)) ci=i;});
   }
   const ni=list.findIndex(it=>it.s>n);
   return {n,list,cur:ci>=0?list[ci]:null,nx:ni>=0?list[ni]:null,ni,
@@ -2557,8 +2637,8 @@ function delayBlock(st){
     ? `<div class="delaybar${cur<0?' early':''}"><span>${ic('clock')}約${Math.abs(cur)}分${cur>0?'遅れ':'早め'}で進んでいます${rec&&rec.by?`<small>${esc(rec.by)}さん ${rec.at?fmtClock(rec.at):''}</small>`:''}</span><button class="link" data-delayopen>変更</button></div>`
     : `<div class="delaybar plain"><span>${ic('clock')}予定どおり</span><button class="link" data-delayopen>時間のずれを共有</button></div>`;
 }
-function pushDelay(min){
-  const st=status(), tg=delayTarget(st); if(!tg) return;
+function pushDelay(min,target,msg){
+  const st=status(), tg=target||delayTarget(st); if(!tg) return;
   if(!ensureName()) return;
   const key=kOf(tg), before=DELAYS[key];
   DELAYS[key]={min,by:S.name,at:new Date().toISOString()};
@@ -2569,7 +2649,7 @@ function pushDelay(min){
       return ask({title:'編集用のパスコード',msg:'遅れや集合時間を入力できる人だけに伝えられているパスコードです。',ok:'保存する',input:{type:'password',placeholder:'パスコード'}})
         .then(pc=>{if(!pc) throw new Error('CANCEL'); S.pass=pc; save(); return send();});
     throw err;
-  }).then(d=>{gotDelays(d);renderHero();renderDays();toast(min?`このあと約${Math.abs(min)}分${min>0?'遅れ':'早め'}で共有しました`:'予定どおりに戻しました');})
+  }).then(d=>{gotDelays(d);renderHero();renderDays();toast(msg||(min?`このあと約${Math.abs(min)}分${min>0?'遅れ':'早め'}で共有しました`:'予定どおりに戻しました'));})
     .catch(err=>{ if(before) DELAYS[key]=before; else delete DELAYS[key]; renderHero(); renderDays();
       if(!String(err).includes('CANCEL')) toast(String(err).includes('PASSCODE')?'パスコードが違うため保存できませんでした':'保存できませんでした。電波のよい場所でもう一度お試しください','err'); });
 }
@@ -2627,7 +2707,7 @@ function renderHero(){
         ${verb?`<span class="left">${verb}<br><span class="num">${dur(ce-n)}</span></span>`:''}</div>
         <div class="where">${tS(cur)}${cur.e?'〜'+tE(cur):'〜'}${cur.shift?'（予定 '+cur.t+(cur.e?'〜'+cur.e:'')+'）':''}${cur.sub?'　'+esc(cur.sub):''}</div>${spotInfo(cur,true)}
         ${(cur.e||hasMeet)&&!(hasMeet&&n>=ce)?`<div class="bar"><i style="width:${pct}%"></i></div>`:''}
-        ${moving?'':meetCard(cur,n)+((meetOf(cur)||cur.k==='gather')?rollBlock(cur):'')+linksHtml(cur)}`;
+        ${moving?'':meetCard(cur,n)+((meetOf(cur)||cur.k==='gather')?rollBlock(cur):'')+departBtn(cur,n)+linksHtml(cur)}`;
     if(nx&&nx.di===cur.di) h+=goBlock(nx,ce,n,'つぎ',cur.pen)+laterBlock(st);
     else if(nx) h+=tonightLink(cur.di)+`<div class="go"><div class="lbl">${ic('cal')}きょうの予定はここまで</div>
         <div class="dest"><span class="num">${nx.t}</span><b>${esc(nx.title)}</b></div><div class="where">${DAYS[nx.di].label}（10/${+DAYS[nx.di].date.slice(8)}）の最初の予定</div></div>`;
@@ -3200,7 +3280,7 @@ function renderAll(){
 
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-refresh],[data-tab],[data-day],[data-toggle],[data-start],[data-pack],[data-packdel],[data-packreset],[data-sim],[data-clear],[data-roll],[data-rolllist],[data-rollfor],[data-rollundo],[data-bpadd],[data-bpshow],[data-bpdel],[data-bpclose],[data-bpfield],[data-bporig],[data-mapfull],[data-noticehide],[data-noticeedit],[data-columns],[data-mapt],[data-locate],[data-dia],[data-wx],[data-wxclose],[data-gotoken],[data-packadd],[data-view-size],[data-view-toggle],[data-delayopen],[data-delayset],[data-delaycancel],[data-scene],[data-note],[data-want],[data-vis],[data-kind],[data-nkind],[data-vis],[data-meetedit],[data-meetq],[data-meetsave],[data-meetdel],[data-meetcancel]');
+  const t=e.target.closest('[data-refresh],[data-tab],[data-day],[data-toggle],[data-start],[data-pack],[data-packdel],[data-packreset],[data-sim],[data-clear],[data-roll],[data-rolllist],[data-depart],[data-rollselall],[data-rollmany],[data-rollfor],[data-rollundo],[data-bpadd],[data-bpshow],[data-bpdel],[data-bpclose],[data-bpfield],[data-bporig],[data-mapfull],[data-noticehide],[data-noticeedit],[data-columns],[data-mapt],[data-locate],[data-dia],[data-wx],[data-wxclose],[data-gotoken],[data-packadd],[data-view-size],[data-view-toggle],[data-delayopen],[data-delayset],[data-delaycancel],[data-scene],[data-note],[data-want],[data-vis],[data-kind],[data-nkind],[data-vis],[data-meetedit],[data-meetq],[data-meetsave],[data-meetdel],[data-meetcancel]');
   if(!t) return;
   const ds=t.dataset;
   if(ds.tab){if(ds.tab!==S.tab&&editMeet){if(!(await confirmDiscard()))return;renderSheet();renderNotes();}
@@ -3290,6 +3370,11 @@ document.addEventListener('click',async e=>{
   else if('noticeedit' in ds){editNotice();}
   else if('noticehide' in ds){try{localStorage.setItem(KEY+'-notice-hid',NOTICE.text+'|'+NOTICE.until);}catch(_){} renderHero();}
   else if(ds.roll){sendRoll(ds.roll);}
+  else if(ds.depart){departNow(ds.depart);}
+  else if(ds.rollselall){ const key=ds.rollselall, it=DAYS[+key.split('-')[0]].items[+key.split('-')[1]], got=ROLL[key]||{};
+    const yet=rollTargets(it).filter(m=>!got[m.name]); const allOn=yet.every(m=>ROLL_SEL.has(m.name));
+    yet.forEach(m=>allOn?ROLL_SEL.delete(m.name):ROLL_SEL.add(m.name)); refreshRollSheet(key); }
+  else if(ds.rollmany){sendRollMany(ds.rollmany);}
   else if(ds.rolllist){openRollList(ds.rolllist);}
   else if(ds.rollfor){ if(await ask({title:ds.rollfor+' さんを点呼済みにしますか？',ok:'点呼済みにする'})) sendRoll(ds.rollkey,ds.rollfor); }
   else if(ds.rollundo){ if(await ask({title:(ds.rollundo===ME.name?'自分':ds.rollundo+' さん')+'の点呼を取り消しますか？',ok:'取り消す',danger:true})) sendRoll(ds.rollkey,ds.rollundo,true); }
