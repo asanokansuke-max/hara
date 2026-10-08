@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/08 11:47">
+<meta name="app-version" content="10/08 11:50">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1361,6 +1361,14 @@ html.pvlock body{position:fixed;left:0;right:0;width:100%}
 /* 入力の小窓は、搭乗券やPDFの画面より手前に出す */
 #dlg{z-index:90!important}
 #toast{z-index:95!important}
+
+/* 帰りの搭乗券：ほかの欄と横幅をそろえる */
+.bpmy{grid-template-columns:minmax(0,1fr)}
+.bpmy,.bprow,.bpedit,.bpadd2{box-sizing:border-box;width:100%;max-width:100%}
+.bprow{min-width:0}
+.bprow .btn{flex:none;padding:0 14px;min-height:40px}
+.bprow .link{flex:none;font-size:13px}
+.bpedit{white-space:normal;text-align:left;line-height:1.4;padding:10px 12px}
 </style>
 </head>
 <body class="locked">
