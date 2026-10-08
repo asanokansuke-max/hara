@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/08 13:44">
+<meta name="app-version" content="10/08 13:54">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1403,6 +1403,21 @@ html.pvlock body{position:fixed;left:0;right:0;width:100%}
 .rl-many{position:sticky;bottom:0;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;margin-top:10px;border-radius:14px;background:var(--now,#e07b00);color:#fff;font-size:16px;font-weight:900;box-shadow:0 -4px 12px rgba(255,255,255,.9),0 3px 10px rgba(224,123,0,.3)}
 .rl-many svg{width:20px;height:20px;stroke-width:2.6}
 .rl-many[disabled]{background:#d8d2c4;box-shadow:none}
+
+/* 到着しました */
+.rl-go.arrive{border-color:var(--now,#e07b00);color:var(--now,#e07b00);margin-top:10px}
+/* 手順（到着→集合時間→点呼→出発） */
+.flow{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);margin:10px 0 8px;padding:0;position:relative}
+.flow li{display:flex;flex-direction:column;align-items:center;gap:3px;position:relative;font-size:11.5px;font-weight:800;color:var(--muted)}
+.flow li::before{content:"";position:absolute;top:12px;left:-50%;width:100%;height:2px;background:#e3d6bd;z-index:0}
+.flow li:first-child::before{display:none}
+.flow li.done::before,.flow li.now::before{background:var(--next,#0b7a5f)}
+.flow i{position:relative;z-index:1;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:12.5px;font-weight:900;background:#fff;border:2px solid #e3d6bd;color:var(--muted)}
+.flow i svg{width:15px;height:15px;stroke-width:3}
+.flow li.done i{background:var(--next,#0b7a5f);border-color:var(--next,#0b7a5f);color:#fff}
+.flow li.done{color:var(--next,#0b7a5f)}
+.flow li.now i{border-color:var(--now,#e07b00);color:var(--now,#e07b00);box-shadow:0 0 0 4px rgba(224,123,0,.18)}
+.flow li.now{color:var(--now,#e07b00);font-weight:900}
 </style>
 </head>
 <body class="locked">
@@ -2533,8 +2548,11 @@ let editMeet=null;
 const SCROLL={};
 /* その場所の次の予定（飛行機以外。同じ日の中） */
 function nextAfter(it){ const d=DAYS[it.di]; const i=d.items.indexOf(it); return d.items.slice(i+1).find(x=>x.k!=='flight'&&!isOff(x))||null; }
-/* 集合時間のあとに「出発しました」（＝次の予定の時刻のずれ）が共有されたか */
+/* 出発の記録は、点呼の仕組みを借りて「90+日目-番号」のキーで残す（GASを書き換えずに全員で共有できる） */
+const depKey=it=>(90+it.di)+'-'+DAYS[it.di].items.indexOf(it);
+/* その場所を「出発しました」か */
 function departed(it){
+  if(ROLL_ON===true){ const r=ROLL[depKey(it)]; return !!(r&&Object.keys(r).length); }
   const m=meetMin(it), tg=nextAfter(it); if(m==null||!tg) return false;
   const rec=DELAYS[kOf(tg)]; if(!rec||!rec.at) return false;
   const at=(Date.parse(rec.at)+9*3600e3)/60000;
@@ -2548,11 +2566,36 @@ async function departNow(key){
   const n=st.n, arr=n+travel;
   let min=Math.round((arr-tg.ps)/5)*5; min=Math.max(-120,Math.min(240,min));
   if(!(await ask({title:'出発を全員に知らせますか？',msg:`「${tg.title}」の到着見込みを、いまからの移動時間（約${travel}分）で計算し直して、全員の画面に反映します。\n到着見込み：${fmtT(tg.ps+min)}（予定表では ${fmtT(tg.ps)}）`,ok:'出発しました'}))) return;
+  /* 出発の記録（全員で共有） */
+  if(ROLL_ON===true){
+    const dk=depKey(it); (ROLL[dk]=ROLL[dk]||{})[ME.name]={t:fmtT(n),by:'本人'};
+    api('rollCall',{key:dk,title:'出発 '+it.title,date:DAYS[it.di].date,pass:S.pass}).then(r=>{if(r)ROLL=r;}).catch(()=>{});
+  }
   pushDelay(min,tg,'出発を全員に知らせました');
+}
+/* 「到着しました」：向かっている先の時刻を、いまに合わせて全員に共有する */
+async function arriveNow(key){
+  const st=status(), it=st.list.find(x=>kOf(x)===key); if(!it) return;
+  const n=st.n; let min=Math.max(-120,Math.min(240,n-it.ps));
+  if(!(await ask({title:'到着を全員に知らせますか？',msg:`「${it.title}」に着いたことにして、ここから後ろの予定の時刻を合わせ直し、全員の画面に反映します。`,ok:'到着しました'}))) return;
+  pushDelay(min,it,'到着を全員に知らせました');
+}
+function arriveBtn(nx,n){
+  if(!HAS_GAS||!ME.email||nx.k==='flight'||n<nx.s-90) return '';
+  return `<button class="rl-go arrive" data-arrive="${kOf(nx)}">${ic('pin')}<span><b>到着しました</b><em>着いたら押してください</em></span>${ic('chevron')}</button>`;
+}
+/* 幹事・添乗員向けの手順：到着 → 集合時間 → 点呼 → 出発 */
+function flowSteps(it){
+  if(!HAS_GAS||!ME.email||!nextAfter(it)) return '';
+  const key=kOf(it), got=ROLL[key]||{}, mem=rollTargets(it);
+  const hasMeet=!!meetOf(it), rollAll=ROLL_ON===true&&mem.length>0&&mem.every(x=>got[x.name]), dep=departed(it);
+  const st=[['到着',true],['集合時間',hasMeet],['点呼',ROLL_ON===true?rollAll:hasMeet],['出発',dep]];
+  const curI=st.findIndex(x=>!x[1]);
+  return `<ol class="flow">${st.map(([l,d],i)=>`<li class="${d?'done':i===curI?'now':''}"><i>${d?ic('check'):i+1}</i><span>${l}</span></li>`).join('')}</ol>`;
 }
 function departBtn(it,n){
   if(!HAS_GAS||!ME.email) return '';
-  const m=meetMin(it); if(m==null||n<m-20||departed(it)||!nextAfter(it)) return '';
+  const m=meetMin(it); if(m==null||departed(it)||!nextAfter(it)) return '';
   const key=kOf(it), got=ROLL[key]||{}, mem=rollTargets(it), all=ROLL_ON===true&&mem.length>0&&mem.every(x=>got[x.name]);
   return `<button class="rl-go${all?' ready':''}" data-depart="${key}">${ic('bus')}<span><b>出発しました</b><em>${all?'全員そろったら押してください':'押すと次の予定へ進みます'}</em></span>${ic('chevron')}</button>`;
 }
@@ -2560,13 +2603,13 @@ function status(){
   applyShift();
   const n=nowMin(), list=ALL();
   /* 予定の最中（同時刻に重なる場合は後ろを優先）。集合時間を過ぎても、メモしてあればその時刻まで「いま」のまま */
-  let ci=-1; list.forEach((it,i)=>{if(it.s<=n&&n<endOf(it)) ci=i;});
+  let ci=-1; list.forEach((it,i)=>{if(it.s<=n&&n<endOf(it)&&!departed(it)) ci=i;});
   if(ci<0){ /* 集合時間を少し過ぎただけ（30分以内）なら、まだその場所にいる扱い。ただし「出発しました」のあとは次へ進む */
     list.forEach((it,i)=>{const m=meetMin(it); if(m!=null&&n>=m&&n<m+30&&!list.some(x=>x.s>it.s&&x.s<=n)&&!departed(it)) ci=i;});
   }
   const ni=list.findIndex(it=>it.s>n);
   return {n,list,cur:ci>=0?list[ci]:null,nx:ni>=0?list[ni]:null,ni,
-          prev:[...list].reverse().find(it=>endOf(it)<=n)||null};
+          prev:[...list].reverse().find(it=>endOf(it)<=n||(departed(it)&&it.s<=n))||null};
 }
 function meetEditor(it,n){
   const m=MEET[kOf(it)]||{};
@@ -2707,7 +2750,7 @@ function renderHero(){
         ${verb?`<span class="left">${verb}<br><span class="num">${dur(ce-n)}</span></span>`:''}</div>
         <div class="where">${tS(cur)}${cur.e?'〜'+tE(cur):'〜'}${cur.shift?'（予定 '+cur.t+(cur.e?'〜'+cur.e:'')+'）':''}${cur.sub?'　'+esc(cur.sub):''}</div>${spotInfo(cur,true)}
         ${(cur.e||hasMeet)&&!(hasMeet&&n>=ce)?`<div class="bar"><i style="width:${pct}%"></i></div>`:''}
-        ${moving?'':meetCard(cur,n)+((meetOf(cur)||cur.k==='gather')?rollBlock(cur):'')+departBtn(cur,n)+linksHtml(cur)}`;
+        ${moving?'':flowSteps(cur)+meetCard(cur,n)+((meetOf(cur)||cur.k==='gather')?rollBlock(cur):'')+departBtn(cur,n)+linksHtml(cur)}`;
     if(nx&&nx.di===cur.di) h+=goBlock(nx,ce,n,'つぎ',cur.pen)+laterBlock(st);
     else if(nx) h+=tonightLink(cur.di)+`<div class="go"><div class="lbl">${ic('cal')}きょうの予定はここまで</div>
         <div class="dest"><span class="num">${nx.t}</span><b>${esc(nx.title)}</b></div><div class="where">${DAYS[nx.di].label}（10/${+DAYS[nx.di].date.slice(8)}）の最初の予定</div></div>`;
@@ -2715,9 +2758,9 @@ function renderHero(){
     if(nx&&!(cm&&!moving)) sticky=`<span>${nx.di===cur.di?'つぎ':'あした'}</span><span class="num">${tS(nx)}</span><b>${esc(nx.title)}</b><span class="m">あと${dur(nx.s-n)}</span>`;
   }else if(nx){
     if(prev&&prev.di===nx.di){
-      const pe=endOf(prev), pct=Math.min(100,(n-pe)/Math.max(1,nx.s-pe)*100);
+      const pe=Math.min(endOf(prev),n), pct=Math.min(100,(n-pe)/Math.max(1,nx.s-pe)*100);
       h+=`<div class="state">いま　移動中</div><div class="where">${esc(prev.title)} を出発</div>`+goBlock(nx,pe,n,'向かっている先',prev.pen)
-        +`<div class="bar"><i style="width:${pct}%"></i></div>`+laterBlock(st);
+        +`<div class="bar"><i style="width:${pct}%"></i></div>`+arriveBtn(nx,n)+laterBlock(st);
     }else{
       h+=`<div class="state">${DAYS[nx.di].label}（10/${+DAYS[nx.di].date.slice(8)}）</div>`+(prev&&prev.di===nx.di-1?tonightLink(prev.di):'')+goBlock(nx,null,n,'つぎ')+laterBlock(st);
     }
@@ -3280,7 +3323,7 @@ function renderAll(){
 
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-refresh],[data-tab],[data-day],[data-toggle],[data-start],[data-pack],[data-packdel],[data-packreset],[data-sim],[data-clear],[data-roll],[data-rolllist],[data-depart],[data-rollselall],[data-rollmany],[data-rollfor],[data-rollundo],[data-bpadd],[data-bpshow],[data-bpdel],[data-bpclose],[data-bpfield],[data-bporig],[data-mapfull],[data-noticehide],[data-noticeedit],[data-columns],[data-mapt],[data-locate],[data-dia],[data-wx],[data-wxclose],[data-gotoken],[data-packadd],[data-view-size],[data-view-toggle],[data-delayopen],[data-delayset],[data-delaycancel],[data-scene],[data-note],[data-want],[data-vis],[data-kind],[data-nkind],[data-vis],[data-meetedit],[data-meetq],[data-meetsave],[data-meetdel],[data-meetcancel]');
+  const t=e.target.closest('[data-refresh],[data-tab],[data-day],[data-toggle],[data-start],[data-pack],[data-packdel],[data-packreset],[data-sim],[data-clear],[data-roll],[data-rolllist],[data-depart],[data-arrive],[data-rollselall],[data-rollmany],[data-rollfor],[data-rollundo],[data-bpadd],[data-bpshow],[data-bpdel],[data-bpclose],[data-bpfield],[data-bporig],[data-mapfull],[data-noticehide],[data-noticeedit],[data-columns],[data-mapt],[data-locate],[data-dia],[data-wx],[data-wxclose],[data-gotoken],[data-packadd],[data-view-size],[data-view-toggle],[data-delayopen],[data-delayset],[data-delaycancel],[data-scene],[data-note],[data-want],[data-vis],[data-kind],[data-nkind],[data-vis],[data-meetedit],[data-meetq],[data-meetsave],[data-meetdel],[data-meetcancel]');
   if(!t) return;
   const ds=t.dataset;
   if(ds.tab){if(ds.tab!==S.tab&&editMeet){if(!(await confirmDiscard()))return;renderSheet();renderNotes();}
@@ -3371,6 +3414,7 @@ document.addEventListener('click',async e=>{
   else if('noticehide' in ds){try{localStorage.setItem(KEY+'-notice-hid',NOTICE.text+'|'+NOTICE.until);}catch(_){} renderHero();}
   else if(ds.roll){sendRoll(ds.roll);}
   else if(ds.depart){departNow(ds.depart);}
+  else if(ds.arrive){arriveNow(ds.arrive);}
   else if(ds.rollselall){ const key=ds.rollselall, it=DAYS[+key.split('-')[0]].items[+key.split('-')[1]], got=ROLL[key]||{};
     const yet=rollTargets(it).filter(m=>!got[m.name]); const allOn=yet.every(m=>ROLL_SEL.has(m.name));
     yet.forEach(m=>allOn?ROLL_SEL.delete(m.name):ROLL_SEL.add(m.name)); refreshRollSheet(key); }
