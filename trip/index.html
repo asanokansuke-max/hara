@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/08 11:50">
+<meta name="app-version" content="10/08 11:55">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1369,6 +1369,15 @@ html.pvlock body{position:fixed;left:0;right:0;width:100%}
 .bprow .btn{flex:none;padding:0 14px;min-height:40px}
 .bprow .link{flex:none;font-size:13px}
 .bpedit{white-space:normal;text-align:left;line-height:1.4;padding:10px 12px}
+
+/* 文字を大きくしている端末でも、はみ出さないように（格子で並べ、ボタンは縦に積む） */
+.bprow{display:grid!important;grid-template-columns:52px minmax(0,1fr) auto;align-items:center;overflow:hidden}
+.bprow .bpm b,.bprow .bpm span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.bpact{display:flex;flex-direction:column;align-items:center;gap:2px}
+.bpact .btn{min-height:38px;padding:0 14px}
+.bpedit{display:flex!important;overflow:hidden}
+.bpedit span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bpmy,.bprow,.bpedit,.bpadd2{min-width:0}
 </style>
 </head>
 <body class="locked">
@@ -3151,8 +3160,8 @@ function renderMy(){
   ${pm?`<div class="blk"><h3>日程に書いたメモ</h3>${pm}</div>`:''}
   <div class="blk"><h3>帰りの搭乗券</h3>
     <div class="bpmy">${bpList().map(p=>`<div class="bprow"><img src="${p.img}" alt=""><div class="bpm"><b>${esc(p.label)}</b><span>${[p.seat&&'座席 '+esc(p.seat),p.gate&&'搭乗口 '+esc(p.gate),p.group&&esc(p.group),p.board&&'搭乗 '+esc(p.board)].filter(Boolean).join('・')||'保存 '+esc(p.at)+(p.qr?'':'（画像のまま）')}</span></div>
-      <button class="btn" data-bpshow="${p.id}">表示</button><button class="link" data-bpdel="${p.id}">削除</button></div>
-      <button class="btn bpedit" data-bpshow="${p.id}">${ic('edit')}座席・搭乗グループ・搭乗口・搭乗開始を入力${[p.seat,p.group,p.gate,p.board].some(Boolean)?'（入力済み）':''}</button>`).join('')}</div>
+      <div class="bpact"><button class="btn" data-bpshow="${p.id}">表示</button><button class="link" data-bpdel="${p.id}">削除</button></div></div>
+      <button class="btn bpedit" data-bpshow="${p.id}">${ic('edit')}<span>${[p.seat,p.group,p.gate,p.board].some(Boolean)?'座席・搭乗口などを直す':'座席・搭乗口などを入力'}</span></button>`).join('')}</div>
     <div class="bpadd2"><button class="btn bpbig" data-bpadd="cam">${ic('camera')}カメラで撮る</button><button class="btn bpbig" data-bpadd="pic">${ic('photo')}写真から選ぶ</button></div>
     <div class="note">搭乗券のQRコードを撮るか、スクリーンショットを選ぶだけです。QRコードの部分を自動で切り出し、便名も自動で付けて保存します。<b>この端末の中だけに保存され、ほかの人やサーバーには送られません。</b>搭乗口では、念のため紙の搭乗券も持っておいてください。</div></div>
   <div class="blk"><h3>持ち物</h3><div id="packbox"></div></div>
