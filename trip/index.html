@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/08 11:41">
+<meta name="app-version" content="10/08 11:47">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1957,6 +1957,9 @@ function toast(msg,kind){
 function ask({title,msg='',ok='OK',cancel='キャンセル',danger=false,input=null,choices=null}){
   return new Promise(res=>{
     const d=document.getElementById('dlg'), i=document.getElementById('dlg-i'), ch=document.getElementById('dlg-ch');
+    /* 搭乗券やPDFの画面が開いているときは、その画面の中に小窓を出す（iPhoneで後ろに隠れないように） */
+    const host=[...document.querySelectorAll('#bpv,#pdfv')].find(x=>!x.hidden);
+    if(host&&d.parentNode!==host) host.appendChild(d);
     ch.innerHTML=choices?choices.map(c=>`<button data-choice="${esc(String(c.v))}">${esc(c.label)}</button>`).join(''):'';
     ch.style.display=choices?'grid':'none';
     document.getElementById('dlg-o').style.display=choices?'none':'';
@@ -1966,7 +1969,7 @@ function ask({title,msg='',ok='OK',cancel='キャンセル',danger=false,input=n
     o.textContent=ok; c.textContent=cancel; o.classList.toggle('danger',danger);
     if(input){i.style.display='';i.type=input.type||'text';i.value=input.value||'';i.placeholder=input.placeholder||'';}
     else i.style.display='none';
-    const done=v=>{d.classList.remove('on');o.onclick=c.onclick=d.onclick=i.onkeydown=document.onkeydown=ch.onclick=null;res(v);};
+    const done=v=>{d.classList.remove('on'); if(d.parentNode!==document.body) document.body.appendChild(d);o.onclick=c.onclick=d.onclick=i.onkeydown=document.onkeydown=ch.onclick=null;res(v);};
     ch.onclick=e=>{const b=e.target.closest('[data-choice]'); if(b) done(b.getAttribute('data-choice'));};
     o.onclick=()=>done(input?i.value.trim():true);
     c.onclick=()=>done((input||choices)?null:false);
