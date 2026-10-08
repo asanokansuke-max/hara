@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/08 10:53">
+<meta name="app-version" content="10/08 11:22">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1344,6 +1344,17 @@ html.pvlock body{position:fixed;left:0;right:0;width:100%}
 .bpbig svg{width:26px;height:26px}
 
 .bpbig svg.i{width:26px;height:26px;stroke-width:1.9}
+
+.bpv-info{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:10px 10px 0}
+.bpf{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 4px;border-radius:12px;background:#f3f7f5;border:1px solid #d7e6df;min-width:0}
+.bpf span{font-size:11px;font-weight:800;color:var(--muted)}
+.bpf b{font-size:19px;font-weight:900;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.bpf.empty b{font-size:13px;color:var(--sea);text-decoration:underline}
+#bpv-qr{display:grid;place-items:center;width:100%}
+#bpv-qr[hidden],#bpv-img[hidden]{display:none}
+.bpqr{image-rendering:pixelated;display:block}
+.bpv-sw{text-align:center;padding:0 0 4px}
+.bpv-sw .link{font-size:12.5px;color:var(--muted)}
 </style>
 </head>
 <body class="locked">
@@ -1413,7 +1424,9 @@ html.pvlock body{position:fixed;left:0;right:0;width:100%}
 <input type="file" id="bpcam" accept="image/*" capture="environment" hidden>
 <div id="bpv" role="dialog" aria-modal="true" aria-labelledby="bpv-t" hidden>
   <div class="bpv-hd"><button class="pv-close" data-bpclose aria-label="搭乗券を閉じる"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>閉じる</button><div class="bpv-tt"><b id="bpv-t"></b><span id="bpv-n"></span></div></div>
-  <div class="bpv-bd"><img id="bpv-img" alt="搭乗券のQRコード"></div>
+  <div class="bpv-info" id="bpv-info"></div>
+  <div class="bpv-bd"><div id="bpv-qr"></div><img id="bpv-img" alt="搭乗券のQRコード"></div>
+  <div class="bpv-sw" id="bpv-sw"></div>
   <div class="bpv-ft">画面を最も明るくして、係員にお見せください</div>
 </div>
 <div id="toast" role="status" aria-live="polite"></div>
@@ -1755,8 +1768,37 @@ function loadJsQR(){
 function pickBoardingPass(cam){ const f=document.getElementById(cam?'bpcam':'bpfile'); f.value=''; f.click(); }
 /* 搭乗券のQRコード（航空会社共通の形式）から、区間と便名を読み取って名前にする */
 const AIRPORT={KMJ:'熊本',HND:'羽田',KMQ:'小松',KOJ:'鹿児島',ITM:'伊丹',NRT:'成田',FUK:'福岡'};
+/* 航空会社共通の形式なら、座席を読み取る（例：…KMJHNDJL 0630 283Y012A… → 12A） */
+function bpParse(data){
+  const s=String(data||''); const m=s.match(/[A-Z]{3}[A-Z]{3}[A-Z0-9 ]{3}[0-9 ]{4}[A-Z ]?\d{3}[A-Z](\d{3}[A-Z])/);
+  return { seat: m?m[1].replace(/^0+/,''):'' };
+}
+let QRGEN=null;
+function loadQrGen(){
+  if(QRGEN) return QRGEN;
+  const self=/github\.io$/.test(location.hostname)?'lib/':'https:'+'/'+'/asanokansuke-max.github.io/hara/trip/lib/';
+  const srcs=[self+'qrcode.js','https:'+'/'+'/cdn.jsdelivr.net/npm/qrcode-generator@2.0.4/dist/qrcode.js'];
+  const tryL=i=>new Promise((ok,ng)=>{ if(i>=srcs.length){ng(new Error('qrgen'));return;}
+    const s=document.createElement('script'); s.src=srcs[i]; s.onload=()=>window.qrcode?ok(window.qrcode):tryL(i+1).then(ok,ng); s.onerror=()=>{s.remove();tryL(i+1).then(ok,ng);}; document.head.appendChild(s); });
+  QRGEN=tryL(0).catch(e=>{QRGEN=null;throw e;}); return QRGEN;
+}
+/* 読み取った中身から、くっきりしたQRコードを描き直す */
+async function drawCleanQr(raw,box){
+  const qrcode=await loadQrGen();
+  const q=qrcode(0,'M'); q.addData(raw,'Byte'); q.make();
+  const n=q.getModuleCount(), quiet=4, cells=n+quiet*2;
+  const size=Math.floor(Math.min(box.clientWidth||320,(window.innerHeight||700)*.55));
+  const px=Math.max(2,Math.floor(size*(window.devicePixelRatio||2)/cells));
+  const c=document.createElement('canvas'); c.width=c.height=cells*px;
+  const g=c.getContext('2d'); g.fillStyle='#fff'; g.fillRect(0,0,c.width,c.height); g.fillStyle='#000';
+  for(let r=0;r<n;r++) for(let k=0;k<n;k++) if(q.isDark(r,k)) g.fillRect((k+quiet)*px,(r+quiet)*px,px,px);
+  c.style.width=c.style.height=Math.min(size,cells*px)+'px'; c.className='bpqr';
+  box.innerHTML=''; box.appendChild(c);
+}
 function bpLabel(data){
   const s=String(data||'');
+  /* JALのeチケット控えのQRコード（131で始まる航空券番号入り）：便ごとではなく予約全体で1つ */
+  if(/^\d{2}131\d{10}/.test(s)) return 'JAL 搭乗用QRコード';
   const m=s.match(/([A-Z]{3})([A-Z]{3})(JL|NU|JAL)\s*0*(\d{1,4})/);
   if(m&&AIRPORT[m[1]]&&AIRPORT[m[2]]) return AIRPORT[m[1]]+' → '+AIRPORT[m[2]]+'（JAL'+m[4]+'）';
   const f=s.match(/(?:JL|JAL)\s*0*(\d{2,4})/);
@@ -1787,19 +1829,41 @@ async function onBoardingPassFile(file){
       out=c.toDataURL('image/jpeg',.85);
     }
     const label=bpLabel(found&&found.data);
-    const l=bpList().filter(x=>x.label!==label); l.push({id:Date.now().toString(36),label,img:out,qr,at:fmtT(nowMin())});
+    /* 中身はバイト列のまま保存（作り直したQRコードが元とまったく同じ内容になるように） */
+    const raw=found&&found.binaryData?String.fromCharCode.apply(null,found.binaryData):'';
+    const info=bpParse(found&&found.data);
+    const old=bpList().find(x=>x.label===label)||{};
+    const l=bpList().filter(x=>x.label!==label);
+    l.push({id:Date.now().toString(36),label,img:out,qr,raw,at:fmtT(nowMin()),seat:info.seat||old.seat||'',group:old.group||'',gate:old.gate||'',board:old.board||''});
     if(bpSaveList(l)){ renderMy(); renderHero(); toast(qr?'QRコードを保存しました':'QRコードが見つからなかったので、画像をそのまま保存しました'); showBoardingPass(l[l.length-1].id); }
   }catch(e){ toast('画像を読み込めませんでした','err'); }
 }
 function showBoardingPass(id){
   const p=bpList().find(x=>x.id===id); if(!p) return;
   const v=document.getElementById('bpv');
+  if(v.dataset.id!==id) v.dataset.orig='';
   document.getElementById('bpv-t').textContent=p.label;
   document.getElementById('bpv-n').textContent=ME.name?ME.name+' さん':'';
-  document.getElementById('bpv-img').src=p.img;
-  document.getElementById('bpv-img').className=p.qr?'qr':'raw';
-  v.dataset.id=id; v.hidden=false; document.body.classList.add('pdfOpen'); lockPage(true);
+  renderBpInfo(p);
+  const img=document.getElementById('bpv-img'), qb=document.getElementById('bpv-qr'), sw=document.getElementById('bpv-sw');
+  img.src=p.img; img.className=p.qr?'qr':'raw';
+  const showOrig=v.dataset.orig==='1'||!p.raw;
+  img.hidden=!showOrig; qb.hidden=showOrig;
+  if(!showOrig){ qb.innerHTML=''; drawCleanQr(p.raw,qb).catch(()=>{ qb.hidden=true; img.hidden=false; }); }
+  sw.innerHTML=p.raw?`<button class="link" data-bporig>${showOrig?'くっきりしたQRコードで表示':'撮った画像で表示'}</button>`:'';
+  v.dataset.id=id; if(v.hidden){ v.hidden=false; document.body.classList.add('pdfOpen'); lockPage(true); }
   if(!(history.state&&history.state.bp)) history.pushState({bp:1},'');
+}
+const BP_FIELDS=[['seat','座席','例：12A'],['group','搭乗グループ','例：グループ3'],['gate','搭乗口','例：3番'],['board','搭乗開始','例：13:35']];
+function renderBpInfo(p){
+  document.getElementById('bpv-info').innerHTML=BP_FIELDS.map(([k,l])=>`<button class="bpf${p[k]?'':' empty'}" data-bpfield="${k}"><span>${l}</span><b class="num">${p[k]?esc(p[k]):'入力'}</b></button>`).join('');
+}
+async function editBpField(k){
+  const id=document.getElementById('bpv').dataset.id, l=bpList(), p=l.find(x=>x.id===id); if(!p) return;
+  const f=BP_FIELDS.find(x=>x[0]===k);
+  const v=await ask({title:f[1],msg:'搭乗券に書いてある内容を入れてください。空にすると消えます。',ok:'保存する',input:{type:'text',value:p[k]||'',placeholder:f[2]}});
+  if(v==null) return;
+  p[k]=String(v).trim().slice(0,20); bpSaveList(l); renderBpInfo(p); renderMy();
 }
 function closeBoardingPass(fromPop){
   const v=document.getElementById('bpv'); if(v.hidden) return;
@@ -3040,7 +3104,7 @@ function renderMy(){
   ${posted.length?`<div class="blk"><h3>自分がみんなに共有したメモ</h3>${posted.map(noteCard).join('')}</div>`:''}
   ${pm?`<div class="blk"><h3>日程に書いたメモ</h3>${pm}</div>`:''}
   <div class="blk"><h3>帰りの搭乗券</h3>
-    <div class="bpmy">${bpList().map(p=>`<div class="bprow"><img src="${p.img}" alt=""><div class="bpm"><b>${esc(p.label)}</b><span>保存 ${esc(p.at)}${p.qr?'':'（画像のまま）'}</span></div>
+    <div class="bpmy">${bpList().map(p=>`<div class="bprow"><img src="${p.img}" alt=""><div class="bpm"><b>${esc(p.label)}</b><span>${[p.seat&&'座席 '+esc(p.seat),p.gate&&'搭乗口 '+esc(p.gate),p.group&&esc(p.group),p.board&&'搭乗 '+esc(p.board)].filter(Boolean).join('・')||'保存 '+esc(p.at)+(p.qr?'':'（画像のまま）')}</span></div>
       <button class="btn" data-bpshow="${p.id}">表示</button><button class="link" data-bpdel="${p.id}">削除</button></div>`).join('')}</div>
     <div class="bpadd2"><button class="btn bpbig" data-bpadd="cam">${ic('camera')}カメラで撮る</button><button class="btn bpbig" data-bpadd="pic">${ic('photo')}写真から選ぶ</button></div>
     <div class="note">搭乗券のQRコードを撮るか、スクリーンショットを選ぶだけです。QRコードの部分を自動で切り出し、便名も自動で付けて保存します。<b>この端末の中だけに保存され、ほかの人やサーバーには送られません。</b>搭乗口では、念のため紙の搭乗券も持っておいてください。</div></div>
@@ -3080,7 +3144,7 @@ function renderAll(){
 
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-refresh],[data-tab],[data-day],[data-toggle],[data-start],[data-pack],[data-packdel],[data-packreset],[data-sim],[data-clear],[data-roll],[data-rolllist],[data-rollfor],[data-rollundo],[data-bpadd],[data-bpshow],[data-bpdel],[data-bpclose],[data-mapfull],[data-noticehide],[data-noticeedit],[data-columns],[data-mapt],[data-locate],[data-dia],[data-wx],[data-wxclose],[data-gotoken],[data-packadd],[data-view-size],[data-view-toggle],[data-delayopen],[data-delayset],[data-delaycancel],[data-scene],[data-note],[data-want],[data-vis],[data-kind],[data-nkind],[data-vis],[data-meetedit],[data-meetq],[data-meetsave],[data-meetdel],[data-meetcancel]');
+  const t=e.target.closest('[data-refresh],[data-tab],[data-day],[data-toggle],[data-start],[data-pack],[data-packdel],[data-packreset],[data-sim],[data-clear],[data-roll],[data-rolllist],[data-rollfor],[data-rollundo],[data-bpadd],[data-bpshow],[data-bpdel],[data-bpclose],[data-bpfield],[data-bporig],[data-mapfull],[data-noticehide],[data-noticeedit],[data-columns],[data-mapt],[data-locate],[data-dia],[data-wx],[data-wxclose],[data-gotoken],[data-packadd],[data-view-size],[data-view-toggle],[data-delayopen],[data-delayset],[data-delaycancel],[data-scene],[data-note],[data-want],[data-vis],[data-kind],[data-nkind],[data-vis],[data-meetedit],[data-meetq],[data-meetsave],[data-meetdel],[data-meetcancel]');
   if(!t) return;
   const ds=t.dataset;
   if(ds.tab){if(ds.tab!==S.tab&&editMeet){if(!(await confirmDiscard()))return;renderSheet();renderNotes();}
@@ -3177,6 +3241,8 @@ document.addEventListener('click',async e=>{
   else if(ds.bpshow){showBoardingPass(ds.bpshow);}
   else if(ds.bpdel){ if(await ask({title:'この搭乗券を削除しますか？',msg:'この端末から消えます。',ok:'削除する',danger:true})){ bpSaveList(bpList().filter(x=>x.id!==ds.bpdel)); renderMy(); renderHero(); } }
   else if('bpclose' in ds){closeBoardingPass();}
+  else if(ds.bpfield){editBpField(ds.bpfield);}
+  else if('bporig' in ds){ const v=document.getElementById('bpv'); v.dataset.orig=v.dataset.orig==='1'?'':'1'; showBoardingPass(v.dataset.id); }
   else if(ds.sim){
     if(ds.sim==='set'){const v=document.getElementById('simin').value; if(/^\d{4}-\d\d-\d\dT\d\d:\d\d/.test(v)) SIM=toMin(v.slice(0,10),v.slice(11,16));}
     else SIM=null;
