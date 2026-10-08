@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <script src="config.js"></script>
-<meta name="app-version" content="10/08 15:07">
+<meta name="app-version" content="10/08 15:12">
 
 <title>鹿児島・熊本 3日間</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1429,6 +1429,15 @@ html.pvlock body{position:fixed;left:0;right:0;width:100%}
 .bpl-f{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .bpl-f .bpf{padding:6px 2px}
 .bpl-f .bpf b{font-size:17px}
+
+/* 終わった予定をたたむ */
+.pastfold{list-style:none;margin:0 0 6px}
+.pastfold button{display:flex;align-items:center;gap:8px;width:100%;padding:10px 14px;border-radius:12px;background:transparent;border:1.5px dashed #cfc6b2;color:var(--muted);font-size:13.5px;font-weight:800}
+.pastfold button>svg:first-child{width:17px;height:17px;color:var(--next,#0b7a5f);stroke-width:2.6}
+.pastfold b{color:var(--ink);font-size:15px}
+.pastfold em{font-style:normal;margin-left:auto;color:var(--sea);font-weight:900}
+.pastfold button>svg:last-child{width:14px;height:14px;transform:rotate(90deg);transition:transform .15s}
+.pastfold button[aria-expanded="true"]>svg:last-child{transform:rotate(-90deg)}
 </style>
 </head>
 <body class="locked">
@@ -2830,7 +2839,7 @@ function defaultDay(){
   const n=nowMin(); const i=DAYS.findIndex(d=>Math.floor(toMin(d.date,'00:00')/1440)===Math.floor(n/1440));
   return i>=0?i:0;
 }
-let openKey=null;
+let openKey=null; const PAST_OPEN={};   /* 終わった予定を開いている日（この画面を開いている間だけ） */
 function renderDays(){
   if(S.day==null) S.day=defaultDay();
   document.getElementById('days').innerHTML=DAYS.map((d,i)=>
@@ -2838,14 +2847,22 @@ function renderDays(){
   const d=DAYS[S.day], n=nowMin();
   const stt=status(), cs=stt.cur, nxs=stt.nx;
   let h=`<div class="dayhead"><h2>${d.title}</h2></div><ol class="tl">`;
-  d.items.forEach(it=>{
+  /* 終わった予定はたたむ（直前の1つだけ残す） */
+  const isDone=it=>!isOff(it)&&cs!==it&&nxs!==it&&(n>=endOf(it)||departed(it));
+  let lastDone=-1; d.items.forEach((it,i)=>{ if(isDone(it)) lastDone=i; });
+  const hide=new Set(); d.items.forEach((it,i)=>{ if(i<lastDone&&(isDone(it)||isOff(it))) hide.add(i); });
+  const nHide=[...hide].filter(i=>!isOff(d.items[i])).length;
+  const folded=nHide>=1&&!PAST_OPEN[S.day];
+  if(nHide>=1) h+=`<li class="pastfold"><button data-pastfold="${S.day}" aria-expanded="${!folded}">${ic('check')}<span>終わった予定　<b class="num">${nHide}</b>件</span><em>${folded?'表示する':'たたむ'}</em>${ic('chevron')}</button></li>`;
+  d.items.forEach((it,i)=>{
+    if(folded&&hide.has(i)&&openKey!==it.di+'-'+it.ii) return;
     const key=it.di+'-'+it.ii, memo=S.memos[key]||'';
     if(it.via){
       const [vl,vi]=VIA[it.via];
       h+=`<li class="via${isOff(it)?' off':''}"><span></span><span class="rail"></span><span class="lbl">${ic(vi)}${vl}${it.viaText?'　'+esc(it.viaText):''}</span></li>`;
     }
     const [kl,ki]=KIND[it.k];
-    const st=isOff(it)?' off':(cs===it?' now':(nxs===it?' nexti':(n>=endOf(it)?' done':'')));
+    const st=isOff(it)?' off':(cs===it?' now':(nxs===it?' nexti':(n>=endOf(it)||departed(it)?' done':'')));
     const mt=meetOf(it);
     const openNow=openKey===key||editMeet===key;
     h+=`<li class="it k-${it.k}${st}${openNow?' open':''}" data-key="${key}">
@@ -3362,7 +3379,7 @@ function renderAll(){
 
 /* ---------- events ---------- */
 document.addEventListener('click',async e=>{
-  const t=e.target.closest('[data-refresh],[data-tab],[data-day],[data-toggle],[data-start],[data-pack],[data-packdel],[data-packreset],[data-sim],[data-clear],[data-roll],[data-rolllist],[data-depart],[data-arrive],[data-rollselall],[data-rollmany],[data-rollfor],[data-rollundo],[data-bpadd],[data-bpshow],[data-bpdel],[data-bpclose],[data-bpfield],[data-bporig],[data-mapfull],[data-noticehide],[data-noticeedit],[data-columns],[data-mapt],[data-locate],[data-dia],[data-wx],[data-wxclose],[data-gotoken],[data-packadd],[data-view-size],[data-view-toggle],[data-delayopen],[data-delayset],[data-delaycancel],[data-scene],[data-note],[data-want],[data-vis],[data-kind],[data-nkind],[data-vis],[data-meetedit],[data-meetq],[data-meetsave],[data-meetdel],[data-meetcancel]');
+  const t=e.target.closest('[data-refresh],[data-tab],[data-day],[data-toggle],[data-start],[data-pack],[data-packdel],[data-packreset],[data-sim],[data-clear],[data-roll],[data-rolllist],[data-depart],[data-arrive],[data-pastfold],[data-rollselall],[data-rollmany],[data-rollfor],[data-rollundo],[data-bpadd],[data-bpshow],[data-bpdel],[data-bpclose],[data-bpfield],[data-bporig],[data-mapfull],[data-noticehide],[data-noticeedit],[data-columns],[data-mapt],[data-locate],[data-dia],[data-wx],[data-wxclose],[data-gotoken],[data-packadd],[data-view-size],[data-view-toggle],[data-delayopen],[data-delayset],[data-delaycancel],[data-scene],[data-note],[data-want],[data-vis],[data-kind],[data-nkind],[data-vis],[data-meetedit],[data-meetq],[data-meetsave],[data-meetdel],[data-meetcancel]');
   if(!t) return;
   const ds=t.dataset;
   if(ds.tab){if(ds.tab!==S.tab&&editMeet){if(!(await confirmDiscard()))return;renderSheet();renderNotes();}
@@ -3454,6 +3471,7 @@ document.addEventListener('click',async e=>{
   else if(ds.roll){sendRoll(ds.roll);}
   else if(ds.depart){departNow(ds.depart);}
   else if(ds.arrive){arriveNow(ds.arrive);}
+  else if(ds.pastfold!=null){PAST_OPEN[ds.pastfold]=!PAST_OPEN[ds.pastfold];renderDays();}
   else if(ds.rollselall){ const key=ds.rollselall, it=DAYS[+key.split('-')[0]].items[+key.split('-')[1]], got=ROLL[key]||{};
     const yet=rollTargets(it).filter(m=>!got[m.name]); const allOn=yet.every(m=>ROLL_SEL.has(m.name));
     yet.forEach(m=>allOn?ROLL_SEL.delete(m.name):ROLL_SEL.add(m.name)); refreshRollSheet(key); }
